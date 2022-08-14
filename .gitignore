@@ -1,0 +1,5 @@
+# Files and paths to ignore
+
+**/build
+**/kern/compile
+defs.mk
