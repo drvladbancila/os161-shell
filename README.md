@@ -45,6 +45,8 @@ This should copy the built kernel inside the `os161/root` directory (you should 
 Now, copy the example config file for sys161 with the following command (from `os161` directory):
 ```
 cp tools/share/examples/sys161/sys161.conf.sample root/sys161.conf
+
+
 ```
 and then move into `root` and create the disk files
 ```
