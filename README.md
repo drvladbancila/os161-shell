@@ -47,6 +47,7 @@ Now, copy the example config file for sys161 with the following command (from `o
 cp tools/share/examples/sys161/sys161.conf.sample root/sys161.conf
 
 
+
 ```
 and then move into `root` and create the disk files
 ```
