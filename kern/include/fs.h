@@ -103,14 +103,14 @@ struct fs_file {
 */
 struct fs_filetable {
 	struct fs_file current;
-	struct fs_file *prev;
-	struct fs_file *next;
+	struct fs_filetable *prev;
+	struct fs_filetable *next;
 };
 
-extern struct fs_filetable sys_filetable;
+extern struct fs_filetable *sys_filetable;
 
 void filetable_init(void);
-void filetable_addfile(void);
+int filetable_addfile(struct fs_file newfile);
 
 /*
  * Macros to shorten the calling sequences.

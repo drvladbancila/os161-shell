@@ -50,41 +50,21 @@
  * linker). And you'd have to write a dynamic linker...
  */
 
-#include <fs.h>
-#include <kern/errno.h>
-#include <lib.h>
+#include <types.h>
+#include <copyinout.h>
+#include <syscall.h>
+#include <vfs.h>
+#include <current.h>
+#include <limits.h>
 
-#define FIRST_FILE (sys_filetable->next == NULL && sys_filetable->prev == NULL)
-
-struct fs_filetable *sys_filetable;
-
-void
-filetable_init(void)
-{
-    sys_filetable = (struct fs_filetable *) kmalloc(sizeof(struct fs_filetable)); 
-    if (next_node == NULL) {
-        return ENOMEM;
-    }
-    sys_filetable->next = NULL;
-    sys_filetable->prev = NULL;
-}
-
+/*
+* System call interface function for opening file
+*/
 int
-filetable_addfile(struct fs_file newfile)
+sys_open(userptr_t filename, int flag, int *retfd)
 {
-    if (FIRST_FILE) {
-        sys_filetable->current = newfile;
-    } else {
-        struct fs_filetable *next_node;
-        next_node = (struct fs_filetable *) kmalloc(sizeof(struct fs_filetable));
-        if (next_node == NULL) {
-            return ENOMEM;
-        }
-        next_node->current = newfile;
-        next_node->next = NULL;
-        next_node->prev = sys_filetable;
-        sys_filetable->next = next_node;
-        sys_filetable = next_node;
-    }
+    (void) filename;
+    (void) flag;
+    (void) retfd;
     return 0;
 }
