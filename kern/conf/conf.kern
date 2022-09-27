@@ -413,6 +413,7 @@ optfile   sfs    fs/sfs/sfs_fsops.c
 optfile   sfs    fs/sfs/sfs_inode.c
 optfile   sfs    fs/sfs/sfs_io.c
 optfile   sfs    fs/sfs/sfs_vnops.c
+optfile   sfs    fs/filetable.c
 
 #
 # netfs (the networked filesystem - you might write this as one assignment)

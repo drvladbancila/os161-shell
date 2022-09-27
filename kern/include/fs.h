@@ -30,6 +30,9 @@
 #ifndef _FS_H_
 #define _FS_H_
 
+#include <limits.h>
+#include <types.h>
+
 struct vnode; /* in vnode.h */
 
 
@@ -75,6 +78,39 @@ struct fs_ops {
 	int           (*fsop_getroot)(struct fs *, struct vnode **);
 	int           (*fsop_unmount)(struct fs *);
 };
+
+/*
+* Open file structure:
+*
+*     f_vnode    - vnode in filesystem
+*     f_mode     - file mode (O_WRONLY, O_RDONLY, O_RDWR)
+*     f_offset   - file offset 
+*     f_lock     - lock to protect file in multithreaded scenarios
+*     f_refcount - number of processes that have opened this file
+* Created by open system call. 
+*/
+struct fs_file {
+	struct vnode *f_vnode;
+	unsigned      f_mode;
+	unsigned      f_offset;
+	bool          f_lock;
+	unsigned      f_refcount;
+};
+
+/*
+* Global file system table (extern)
+* It is a double-linked list (DLL)
+*/
+struct fs_filetable {
+	struct fs_file current;
+	struct fs_file *prev;
+	struct fs_file *next;
+};
+
+extern struct fs_filetable sys_filetable;
+
+void filetable_init(void);
+void filetable_addfile(void);
 
 /*
  * Macros to shorten the calling sequences.
