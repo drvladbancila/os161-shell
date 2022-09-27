@@ -54,37 +54,60 @@
 #include <kern/errno.h>
 #include <lib.h>
 
-#define FIRST_FILE (sys_filetable->next == NULL && sys_filetable->prev == NULL)
+struct fs_file *sys_filetable;
+unsigned int sys_filetable_size;
 
-struct fs_filetable *sys_filetable;
-
+/*
+* Initialize file table head node to NULL
+*/
 void
 filetable_init(void)
 {
-    sys_filetable = (struct fs_filetable *) kmalloc(sizeof(struct fs_filetable)); 
-    if (next_node == NULL) {
-        return ENOMEM;
-    }
-    sys_filetable->next = NULL;
-    sys_filetable->prev = NULL;
+    sys_filetable = NULL;
+    sys_filetable_size = 0;
 }
 
+/*
+* Add new file entry in the file table (which is a DLL).
+* The new file gets appended and the pointer is moved so that it always points
+* to the youngest/newest element.
+*/
 int
-filetable_addfile(struct fs_file newfile)
+filetable_addfile(struct fs_file *newfile)
 {
-    if (FIRST_FILE) {
-        sys_filetable->current = newfile;
+    if (sys_filetable == NULL) {
+        sys_filetable->f_next = NULL;
+        sys_filetable->f_prev = NULL;
     } else {
-        struct fs_filetable *next_node;
-        next_node = (struct fs_filetable *) kmalloc(sizeof(struct fs_filetable));
-        if (next_node == NULL) {
-            return ENOMEM;
-        }
-        next_node->current = newfile;
-        next_node->next = NULL;
-        next_node->prev = sys_filetable;
-        sys_filetable->next = next_node;
-        sys_filetable = next_node;
+        newfile->f_next = NULL;
+        newfile->f_prev = sys_filetable;
+        newfile->f_prev->f_next = newfile;
     }
+    sys_filetable = newfile;
+    sys_filetable_size++;
+
+    // exit successfully
     return 0;
+}
+
+/*
+* Removes a node from the system file table, node is usually obtained by the
+* process from its local file table
+*/
+void
+filetable_removefile(struct fs_file *rmfile)
+{
+    rmfile->f_prev->f_next = rmfile->f_next;
+    rmfile->f_next->f_prev = rmfile->f_prev;
+    sys_filetable_size--;
+    kfree((void *) rmfile);
+}
+
+/*
+* Returns the size of the system file pointer
+*/
+unsigned int
+filetable_size(void)
+{
+    return sys_filetable_size;
 }

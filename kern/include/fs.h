@@ -84,33 +84,36 @@ struct fs_ops {
 *
 *     f_vnode    - vnode in filesystem
 *     f_mode     - file mode (O_WRONLY, O_RDONLY, O_RDWR)
-*     f_offset   - file offset 
+*     f_offset   - file offset
 *     f_lock     - lock to protect file in multithreaded scenarios
-*     f_refcount - number of processes that have opened this file
-* Created by open system call. 
+*     f_refcount - number of procetable_nodesses that have opened this file
+*     f_next     - pointer to next file
+*     f_prev     - pointer to previous file
+* Created by open system call.
 */
 struct fs_file {
-	struct vnode *f_vnode;
-	unsigned      f_mode;
-	unsigned      f_offset;
-	bool          f_lock;
-	unsigned      f_refcount;
+	struct vnode   *f_vnode;
+	unsigned        f_mode;
+	unsigned        f_offset;
+	bool            f_lock;
+	unsigned        f_refcount;
+	struct fs_file *f_prev;
+	struct fs_file *f_next;
 };
 
 /*
-* Global file system table (extern)
-* It is a double-linked list (DLL)
+* System filetable is a doubly-linked list (DLL).
+* New files get appended at the head.
+* Removed files are freed from the heap.
 */
-struct fs_filetable {
-	struct fs_file current;
-	struct fs_filetable *prev;
-	struct fs_filetable *next;
-};
+extern struct fs_file *sys_filetable_head;
+extern unsigned int sys_filetable_size;
 
-extern struct fs_filetable *sys_filetable;
-
+/* Functions to use the filetable */
 void filetable_init(void);
-int filetable_addfile(struct fs_file newfile);
+int  filetable_addfile(struct fs_file *newfile);
+void filetable_removefile(struct fs_file *rmfile_node);
+unsigned int filetable_size(void);
 
 /*
  * Macros to shorten the calling sequences.

@@ -55,7 +55,10 @@
 #include <syscall.h>
 #include <vfs.h>
 #include <current.h>
+#include <proc.h>
 #include <limits.h>
+#include <fs.h>
+#include <kern/errno.h>
 
 /*
 * System call interface function for opening file
@@ -63,6 +66,41 @@
 int
 sys_open(userptr_t filename, int flag, int *retfd)
 {
+    struct fs_file *file;
+    struct vnode *file_vnode;
+    int fd, err;
+    mode_t mode = 0;
+    char *kfilename;
+
+    file = (struct fs_file *) kmalloc(sizeof(struct fs_file));
+    if (file == NULL) {
+        return ENOMEM;
+    }
+
+    kfilename = (char *) filename;
+    err = vfs_open(kfilename, flag, mode, &file_vnode);
+    if (err == EINVAL) {
+        return EINVAL;
+    }
+
+    file->f_vnode = file_vnode;
+    file->f_offset = 0;
+    file->f_lock = 0;
+    file->f_refcount++;
+    file->f_mode = flag;
+
+    err = filetable_addfile(file);
+    if (err > 0) {
+        return ENOMEM;
+    }
+
+    for (fd = 0; fd < OPEN_MAX; fd++) {
+        if (curproc->p_filetable[fd] == NULL) {
+            break;
+        }
+    }
+    curproc->p_filetable[fd] = file;
+
     (void) filename;
     (void) flag;
     (void) retfd;
