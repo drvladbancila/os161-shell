@@ -111,7 +111,7 @@ extern unsigned int sys_filetable_size;
 
 /* Functions to use the filetable */
 void filetable_init(void);
-int  filetable_addfile(struct fs_file *newfile);
+void filetable_addfile(struct fs_file *newfile);
 void filetable_removefile(struct fs_file *rmfile_node);
 unsigned int filetable_size(void);
 

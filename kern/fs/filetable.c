@@ -27,29 +27,6 @@
  * SUCH DAMAGE.
  */
 
-
-/*
- * Code to load an ELF-format executable into the current address space.
- *
- * It makes the following address space calls:
- *    - first, as_define_region once for each segment of the program;
- *    - then, as_prepare_load;
- *    - then it loads each chunk of the program;
- *    - finally, as_complete_load.
- *
- * This gives the VM code enough flexibility to deal with even grossly
- * mis-linked executables if that proves desirable. Under normal
- * circumstances, as_prepare_load and as_complete_load probably don't
- * need to do anything.
- *
- * If you wanted to support memory-mapped executables you would need
- * to rearrange this to map each segment.
- *
- * To support dynamically linked executables with shared libraries
- * you'd need to change this to load the "ELF interpreter" (dynamic
- * linker). And you'd have to write a dynamic linker...
- */
-
 #include <fs.h>
 #include <kern/errno.h>
 #include <lib.h>
@@ -72,7 +49,7 @@ filetable_init(void)
 * The new file gets appended and the pointer is moved so that it always points
 * to the youngest/newest element.
 */
-int
+void
 filetable_addfile(struct fs_file *newfile)
 {
     if (sys_filetable == NULL) {
@@ -85,9 +62,6 @@ filetable_addfile(struct fs_file *newfile)
     }
     sys_filetable = newfile;
     sys_filetable_size++;
-
-    // exit successfully
-    return 0;
 }
 
 /*

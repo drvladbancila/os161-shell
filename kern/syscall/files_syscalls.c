@@ -58,41 +58,46 @@
 #include <proc.h>
 #include <limits.h>
 #include <fs.h>
+#include <kern/fcntl.h>
 #include <kern/errno.h>
 
 /*
 * System call interface function for opening file
 */
 int
-sys_open(userptr_t filename, int flag, int *retfd)
+sys_open(userptr_t filename, int flags, int *retfd)
 {
     struct fs_file *file;
     struct vnode *file_vnode;
-    int fd, err;
-    mode_t mode = 0;
-    char *kfilename;
+    int fd, err, result;
+    mode_t mode;
+    short int rwflag;
+    char *kfilename = NULL;
+
+    result = copyin(filename, kfilename, sizeof(filename));
+    if (result) {
+        return result;
+    }
 
     file = (struct fs_file *) kmalloc(sizeof(struct fs_file));
     if (file == NULL) {
         return ENOMEM;
     }
 
-    kfilename = (char *) filename;
-    err = vfs_open(kfilename, flag, mode, &file_vnode);
+    rwflag = flags & O_ACCMODE;
+    mode = (mode_t) flags >> 2;
+    err = vfs_open(kfilename, rwflag, mode, &file_vnode);
     if (err == EINVAL) {
         return EINVAL;
     }
 
     file->f_vnode = file_vnode;
     file->f_offset = 0;
-    file->f_lock = 0;
+    file->f_lock = false;
     file->f_refcount++;
-    file->f_mode = flag;
+    file->f_mode = mode;
 
-    err = filetable_addfile(file);
-    if (err > 0) {
-        return ENOMEM;
-    }
+    filetable_addfile(file);
 
     for (fd = 0; fd < OPEN_MAX; fd++) {
         if (curproc->p_filetable[fd] == NULL) {
@@ -100,9 +105,7 @@ sys_open(userptr_t filename, int flag, int *retfd)
         }
     }
     curproc->p_filetable[fd] = file;
+    *retfd = fd;
 
-    (void) filename;
-    (void) flag;
-    (void) retfd;
     return 0;
 }
