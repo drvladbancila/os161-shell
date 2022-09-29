@@ -69,42 +69,52 @@ sys_open(userptr_t filename, int flags, int *retfd)
 {
     struct fs_file *file;
     struct vnode *file_vnode;
-    int fd, err, result;
+    int fd, err;
     mode_t mode;
-    short int rwflag;
     char *kfilename = NULL;
 
-    result = copyin(filename, kfilename, sizeof(filename));
-    if (result) {
-        return result;
+    /* copy filename into kernel memory space */
+    kfilename = kstrdup((char *) filename);
+    /* if kstrdup fails to find enough memory return ENOMEM error */
+    if (kfilename == NULL) {
+        return ENOMEM;
     }
 
+    /* allocate space on the heap for a file table entry */
     file = (struct fs_file *) kmalloc(sizeof(struct fs_file));
     if (file == NULL) {
         return ENOMEM;
     }
 
-    rwflag = flags & O_ACCMODE;
-    mode = (mode_t) flags >> 2;
-    err = vfs_open(kfilename, rwflag, mode, &file_vnode);
+    mode = 0644;
+    /* get vnode for the file */
+    err = vfs_open(kfilename, flags, mode, &file_vnode);
     if (err == EINVAL) {
         return EINVAL;
     }
 
+    /* initialize filetable entry */
     file->f_vnode = file_vnode;
     file->f_offset = 0;
     file->f_lock = false;
-    file->f_refcount++;
+    file->f_refcount = 1;
     file->f_mode = mode;
 
+    /* add file to system filetable */
     filetable_addfile(file);
 
+    /* find first available file descriptor */
     for (fd = 0; fd < OPEN_MAX; fd++) {
         if (curproc->p_filetable[fd] == NULL) {
             break;
         }
     }
+    /* save into process filetable the pointer to the entry in the system
+    *  file table at the file descriptor position previously found
+    */
     curproc->p_filetable[fd] = file;
+
+    /* return file descriptor in retfd parameter */
     *retfd = fd;
 
     return 0;

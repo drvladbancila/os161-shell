@@ -114,6 +114,7 @@ void filetable_init(void);
 void filetable_addfile(struct fs_file *newfile);
 void filetable_removefile(struct fs_file *rmfile_node);
 unsigned int filetable_size(void);
+struct fs_file *filetable_gettail(void);
 
 /*
  * Macros to shorten the calling sequences.

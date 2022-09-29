@@ -32,6 +32,7 @@
 #include <lib.h>
 
 struct fs_file *sys_filetable;
+struct fs_file *__sys_filetable_tail;
 unsigned int sys_filetable_size;
 
 /*
@@ -41,6 +42,7 @@ void
 filetable_init(void)
 {
     sys_filetable = NULL;
+    __sys_filetable_tail = NULL;
     sys_filetable_size = 0;
 }
 
@@ -53,14 +55,18 @@ void
 filetable_addfile(struct fs_file *newfile)
 {
     if (sys_filetable == NULL) {
+        /* first file being allocated */
+        sys_filetable = newfile;
+        __sys_filetable_tail = sys_filetable;
         sys_filetable->f_next = NULL;
         sys_filetable->f_prev = NULL;
     } else {
+        /* every other file beside the first one */
         newfile->f_next = NULL;
         newfile->f_prev = sys_filetable;
         newfile->f_prev->f_next = newfile;
+        sys_filetable = newfile;
     }
-    sys_filetable = newfile;
     sys_filetable_size++;
 }
 
@@ -84,4 +90,13 @@ unsigned int
 filetable_size(void)
 {
     return sys_filetable_size;
+}
+
+/*
+* Returns oldest element in the system file table
+*/
+struct fs_file *
+filetable_gettail(void)
+{
+    return __sys_filetable_tail;
 }
