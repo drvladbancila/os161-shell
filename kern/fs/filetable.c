@@ -27,37 +27,61 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _SYSCALL_H_
-#define _SYSCALL_H_
+#include <fs.h>
+#include <kern/errno.h>
+#include <lib.h>
 
-
-#include <cdefs.h> /* for __DEAD */
-struct trapframe; /* from <machine/trapframe.h> */
-
-/*
- * The system call dispatcher.
- */
-
-void syscall(struct trapframe *tf);
+struct fs_file *sys_filetable;
+unsigned int sys_filetable_size;
 
 /*
- * Support functions.
- */
-
-/* Helper for fork(). You write this. */
-void enter_forked_process(struct trapframe *tf);
-
-/* Enter user mode. Does not return. */
-__DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
-		       vaddr_t stackptr, vaddr_t entrypoint);
-
+* Initialize file table head node to NULL
+*/
+void
+filetable_init(void)
+{
+    sys_filetable = NULL;
+    sys_filetable_size = 0;
+}
 
 /*
- * Prototypes for IN-KERNEL entry points for system call implementations.
- */
+* Add new file entry in the file table (which is a DLL).
+* The new file gets appended and the pointer is moved so that it always points
+* to the youngest/newest element.
+*/
+void
+filetable_addfile(struct fs_file *newfile)
+{
+    if (sys_filetable == NULL) {
+        sys_filetable->f_next = NULL;
+        sys_filetable->f_prev = NULL;
+    } else {
+        newfile->f_next = NULL;
+        newfile->f_prev = sys_filetable;
+        newfile->f_prev->f_next = newfile;
+    }
+    sys_filetable = newfile;
+    sys_filetable_size++;
+}
 
-int sys_reboot(int code);
-int sys_open(userptr_t filename, int flag, int *retfd);
-int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
+/*
+* Removes a node from the system file table, node is usually obtained by the
+* process from its local file table
+*/
+void
+filetable_removefile(struct fs_file *rmfile)
+{
+    rmfile->f_prev->f_next = rmfile->f_next;
+    rmfile->f_next->f_prev = rmfile->f_prev;
+    sys_filetable_size--;
+    kfree((void *) rmfile);
+}
 
-#endif /* _SYSCALL_H_ */
+/*
+* Returns the size of the system file pointer
+*/
+unsigned int
+filetable_size(void)
+{
+    return sys_filetable_size;
+}

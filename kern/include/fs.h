@@ -30,6 +30,9 @@
 #ifndef _FS_H_
 #define _FS_H_
 
+#include <limits.h>
+#include <types.h>
+
 struct vnode; /* in vnode.h */
 
 
@@ -75,6 +78,42 @@ struct fs_ops {
 	int           (*fsop_getroot)(struct fs *, struct vnode **);
 	int           (*fsop_unmount)(struct fs *);
 };
+
+/*
+* Open file structure:
+*
+*     f_vnode    - vnode in filesystem
+*     f_mode     - file mode (O_WRONLY, O_RDONLY, O_RDWR)
+*     f_offset   - file offset
+*     f_lock     - lock to protect file in multithreaded scenarios
+*     f_refcount - number of procetable_nodesses that have opened this file
+*     f_next     - pointer to next file
+*     f_prev     - pointer to previous file
+* Created by open system call.
+*/
+struct fs_file {
+	struct vnode   *f_vnode;
+	unsigned        f_mode;
+	unsigned        f_offset;
+	bool            f_lock;
+	unsigned        f_refcount;
+	struct fs_file *f_prev;
+	struct fs_file *f_next;
+};
+
+/*
+* System filetable is a doubly-linked list (DLL).
+* New files get appended at the head.
+* Removed files are freed from the heap.
+*/
+extern struct fs_file *sys_filetable_head;
+extern unsigned int sys_filetable_size;
+
+/* Functions to use the filetable */
+void filetable_init(void);
+void filetable_addfile(struct fs_file *newfile);
+void filetable_removefile(struct fs_file *rmfile_node);
+unsigned int filetable_size(void);
 
 /*
  * Macros to shorten the calling sequences.
