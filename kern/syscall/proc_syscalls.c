@@ -54,7 +54,7 @@ sys_getpid(int *retpid)
 
 /*
 * System call interface function to exit from a process
-* TODO: Still to understand
+* TODO : Still to understand
 */
 int
 sys__exit(int status)
