@@ -64,6 +64,7 @@ proc_create(const char *name)
 {
 	struct proc *proc;
 	unsigned int fd;
+	static int count_pid = PID_MIN;
 
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
@@ -87,6 +88,10 @@ proc_create(const char *name)
 	for (fd = 0; fd < OPEN_MAX; fd++) {
 		proc->p_filetable[fd] = NULL;
 	}
+
+	/* Process ID assignment */
+	proc->p_id = (__pid_t) count_pid;
+	count_pid++; // TODO: best technique?
 
 	return proc;
 }

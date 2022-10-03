@@ -39,6 +39,7 @@
 #include <spinlock.h>
 #include <limits.h>
 #include <fs.h>
+#include <kern/types.h>
 
 struct addrspace;
 struct thread;
@@ -76,6 +77,9 @@ struct proc {
 
 	/* File descriptor table */
 	struct fs_file *p_filetable[OPEN_MAX];
+
+	/* Process ID */
+	__pid_t p_id;
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */
