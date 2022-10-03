@@ -58,6 +58,7 @@ __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
 
 int sys_reboot(int code);
 int sys_open(userptr_t filename, int flag, int *retfd);
+int sys_close(int fd);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 int sys_getpid(int *retpid); 
 
