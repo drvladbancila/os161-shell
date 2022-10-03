@@ -121,3 +121,17 @@ sys_close(int fd)
     //kprintf("Closed file with file descriptor: %d\n", fd);
     return 0;
 }
+
+int
+sys_read(int fd, userptr_t buf, size_t buflen)
+{
+    struct fs_file *openfile;
+    struct uio ku;
+
+    openfile = curproc->p_filetable[fd];
+
+    if (openfile == NULL) {
+        return EINVAL;
+    }
+
+}
