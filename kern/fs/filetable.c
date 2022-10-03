@@ -27,6 +27,11 @@
  * SUCH DAMAGE.
  */
 
+/*
+*  System File Table
+*  Pointer to every opened file is added to this table
+*/
+
 #include <fs.h>
 #include <kern/errno.h>
 #include <lib.h>
@@ -77,9 +82,25 @@ filetable_addfile(struct fs_file *newfile)
 void
 filetable_removefile(struct fs_file *rmfile)
 {
-    rmfile->f_prev->f_next = rmfile->f_next;
-    rmfile->f_next->f_prev = rmfile->f_prev;
+    /* if prev file is null then this is the tail, so can't edit prev ptr */
+    if (rmfile->f_prev != NULL) {
+        rmfile->f_prev->f_next = rmfile->f_next;
+    }
+
+    /* if next file is null then this is the head, so can't edit next ptr */
+    if (rmfile->f_next != NULL) {
+        rmfile->f_next->f_prev = rmfile->f_prev;
+    }
+
     sys_filetable_size--;
+    /*
+    *  if this is the only file in the filetable, make sys_filetable point to
+    *  NULL so that when you add a new file the sys_filetable pointer is reused
+    */
+    if (rmfile->f_prev == NULL && rmfile->f_next == NULL) {
+        sys_filetable = NULL;
+    }
+    /* finally, deallocate the fs_file structure from kernel space */
     kfree((void *) rmfile);
 }
 
