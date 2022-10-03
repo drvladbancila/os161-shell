@@ -80,6 +80,9 @@ struct proc {
 
 	/* Process ID */
 	__pid_t p_id;
+
+	/* Exit status */
+	int p_exit_status;
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */

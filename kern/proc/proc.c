@@ -93,6 +93,9 @@ proc_create(const char *name)
 	proc->p_id = (__pid_t) count_pid;
 	count_pid++; // TODO: best technique?
 
+	/* Exit status initialization */
+	p_exit_status = 0;
+	
 	return proc;
 }
 
