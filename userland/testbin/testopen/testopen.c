@@ -42,10 +42,12 @@
 int
 main()
 {
-    int fd;
+    int fd, fd1;
     fd = open("hello.txt", O_CREAT|O_WRONLY);
-    (void) fd;
-    //printf("File descriptor: %d", fd);
-
+    close(fd);
+    fd = open("ciao.txt", O_CREAT|O_WRONLY);
+    fd1 = open("hello.txt", O_RDONLY);
+    close(fd);
+    close(fd1);
     return 0;
 }
