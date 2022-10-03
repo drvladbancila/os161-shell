@@ -32,6 +32,9 @@
 
 #include <limits.h>
 #include <types.h>
+#include <kern/fcntl.h>
+#include <kern/unistd.h>
+#include <vfs.h>
 
 struct vnode; /* in vnode.h */
 
@@ -108,9 +111,10 @@ struct fs_file {
 */
 extern struct fs_file *sys_filetable_head;
 extern unsigned int sys_filetable_size;
+extern struct fs_file *stdin, *stdout, *stderr;
 
 /* Functions to use the filetable */
-void filetable_init(void);
+int filetable_init(void);
 void filetable_addfile(struct fs_file *newfile);
 void filetable_removefile(struct fs_file *rmfile_node);
 unsigned int filetable_size(void);
