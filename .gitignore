@@ -3,3 +3,5 @@
 **/build
 **/kern/compile
 defs.mk
+os161-shell.code-workspace
+.vscode/settings.json
