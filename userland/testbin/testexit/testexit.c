@@ -37,5 +37,10 @@
 int
 main()
 {
-    exit(EXIT_SUCCESS);
+    int fd;
+    fd = open("exit.txt", O_CREAT|O_WRONLY);
+    close(fd);
+    int a = 0;
+    a++;
+    exit(a);
 }

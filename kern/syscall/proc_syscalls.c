@@ -37,6 +37,7 @@
 #include <fs.h>
 #include <kern/fcntl.h>
 #include <kern/errno.h>
+#include <addrspace.h>
 
 /*
 * System call interface function to get the process ID
