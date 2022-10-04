@@ -27,10 +27,9 @@
  * SUCH DAMAGE.
  */
 
-
 /*
-*  Implementation of the system calls related to file management.
-*/
+ *  Implementation of the system calls related to file management.
+ */
 
 #include <types.h>
 #include <copyinout.h>
@@ -42,12 +41,14 @@
 #include <fs.h>
 #include <kern/fcntl.h>
 #include <kern/errno.h>
+#include <uio.h>
+#include <vnode.h>
+#include <kern/errno.h>
 
 /*
-* System call interface function for opening file
-*/
-int
-sys_open(userptr_t filename, int flags, int *retfd)
+ * System call interface function for opening file
+ */
+int sys_open(userptr_t filename, int flags, int *retfd)
 {
     struct fs_file *file;
     struct vnode *file_vnode;
@@ -56,22 +57,25 @@ sys_open(userptr_t filename, int flags, int *retfd)
     char *kfilename = NULL;
 
     /* copy filename into kernel memory space */
-    kfilename = kstrdup((char *) filename);
+    kfilename = kstrdup((char *)filename);
     /* if kstrdup fails to find enough memory return ENOMEM error */
-    if (kfilename == NULL) {
+    if (kfilename == NULL)
+    {
         return ENOMEM;
     }
 
     /* allocate space on the heap for a file table entry */
     file = (struct fs_file *) kmalloc(sizeof(struct fs_file));
-    if (file == NULL) {
+    if (file == NULL)
+    {
         return ENOMEM;
     }
 
     mode = 0644;
     /* get vnode for the file */
     err = vfs_open(kfilename, flags, mode, &file_vnode);
-    if (err == EINVAL) {
+    if (err == EINVAL)
+    {
         return EINVAL;
     }
 
@@ -86,15 +90,17 @@ sys_open(userptr_t filename, int flags, int *retfd)
     filetable_addfile(file);
 
     /* find first available file descriptor */
-    for (fd = 0; fd < OPEN_MAX; fd++) {
-        if (curproc->p_filetable[fd] == NULL) {
+    for (fd = 0; fd < OPEN_MAX; fd++)
+    {
+        if (curproc->p_filetable[fd] == NULL)
+        {
             break;
         }
     }
     /*
-    *  save into process filetable the pointer to the entry in the system
-    *  file table at the file descriptor position previously found
-    */
+     *  save into process filetable the pointer to the entry in the system
+     *  file table at the file descriptor position previously found
+     */
     curproc->p_filetable[fd] = file;
     // kprintf("Opened file with file descriptor: %d\n", fd);
     /* return file descriptor in retfd parameter */
@@ -103,14 +109,14 @@ sys_open(userptr_t filename, int flags, int *retfd)
     return 0;
 }
 
-int
-sys_close(int fd)
+int sys_close(int fd)
 {
     /*
-    *  check if there is an open file corresponding to the file descriptor
-    *  passed as argument
-    */
-    if (curproc->p_filetable[fd] == NULL) {
+     *  check if there is an open file corresponding to the file descriptor
+     *  passed as argument
+     */
+    if (curproc->p_filetable[fd] == NULL)
+    {
         return EINVAL;
     }
     /* if the file is open, then close it with vfs_close */
@@ -118,20 +124,53 @@ sys_close(int fd)
     /* remove file from system filetable and process filetable */
     filetable_removefile(curproc->p_filetable[fd]);
     curproc->p_filetable[fd] = NULL;
-    //kprintf("Closed file with file descriptor: %d\n", fd);
+    // kprintf("Closed file with file descriptor: %d\n", fd);
     return 0;
 }
 
-int
-sys_read(int fd, userptr_t buf, size_t buflen)
+int sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
 {
     struct fs_file *openfile;
     struct uio ku;
+    struct iovec iov;
+    unsigned int offset;
+    int err;
 
+    /* TODO: lock file while reading */
+
+    /* TODO: read should return EFAULT if
+    *  part or all of the address space pointed to by buf is invalid:
+    *  how?
+    */
+
+    /* retrieve pointer to fs_file struct from process filetable */
     openfile = curproc->p_filetable[fd];
 
-    if (openfile == NULL) {
-        return EINVAL;
+    /* if pointer is NULL then the file descriptor is invalid */
+    if (openfile == NULL)
+    {
+        return EBADF;
     }
 
+    /* take the offset at which the file was left last time */
+    offset = openfile->f_offset;
+    /* initialize uio (still to understand fully...) */
+    uio_kinit(&iov, &ku, (void *) buf, buflen, offset, UIO_READ);
+
+    /* read from vnode and write to the uio (which writes to buf) */
+    err = VOP_READ(openfile->f_vnode, &ku);
+
+    /* any I/O error */
+    if (err) {
+        return EIO;
+    }
+
+    kprintf("%s", (char *) buf);
+
+    /* give as return value the number of bytes read */
+    *retval = ku.uio_offset - openfile->f_offset;
+    /* update the file offset */
+    openfile->f_offset = ku.uio_offset;
+
+    return 0;
 }
