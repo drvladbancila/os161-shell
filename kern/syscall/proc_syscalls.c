@@ -53,6 +53,15 @@ sys_getpid(int *retpid)
 }
 
 /*
+* System call interface function to fork a process
+* TODO: Empty for now
+*/
+int 
+sys_fork(void){
+    return 0;
+}
+
+/*
 * System call interface function to exit from a process
 * TODO: Still to understand
 */

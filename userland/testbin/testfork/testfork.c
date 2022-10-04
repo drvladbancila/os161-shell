@@ -27,45 +27,29 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _SYSCALL_H_
-#define _SYSCALL_H_
-
-
-#include <cdefs.h> /* for __DEAD */
-struct trapframe; /* from <machine/trapframe.h> */
-
 /*
- * The system call dispatcher.
+ * 	Test program for fork syscall.
  */
 
-void syscall(struct trapframe *tf);
+#include <unistd.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <stdio.h>
 
-/*
- * Support functions.
- */
-
-/* Helper for fork(). You write this. */
-void enter_forked_process(struct trapframe *tf);
-
-/* Enter user mode. Does not return. */
-__DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
-		       vaddr_t stackptr, vaddr_t entrypoint);
-
-
-/*
- * Prototypes for IN-KERNEL entry points for system call implementations.
- */
-
-int sys_reboot(int code);
-int sys_open(userptr_t filename, int flag, int *retfd);
-int sys_close(int fd);
-int sys_read(int fd, userptr_t buf, size_t buflen, int *retval);
-int sys_write(int fd, userptr_t buf, size_t buflen, int *retval);
-int sys_lseek(int fd, __off_t pos, int whence, int *retval);
-int sys_dup2(int oldfd, int newfd, int *retval);
-int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
-int sys_getpid(int *retpid); 
-int sys_fork(void);
-int sys__exit(int status);
-
-#endif /* _SYSCALL_H_ */
+int
+main()
+{
+    pid_t pid;
+    pid = fork();
+    if(pid<0){
+        printf("Error: %d\n", errno);
+    }
+    else if(pid==0){
+        printf("I'm the child, my pid is: %d\n", getpid());
+    }
+    else{
+        printf("I'm the parent, my pid is: %d\n", getpid());
+        printf("I'm the parent, my child's pid is: %d\n", pid);
+    }
+    return 0;
+}
