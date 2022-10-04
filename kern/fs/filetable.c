@@ -52,13 +52,15 @@ filetable_init(void)
     sys_filetable = NULL;
     __sys_filetable_tail = NULL;
 
-    strcpy(con_filename, "con:");
     stdin = (struct fs_file *) kmalloc(sizeof(struct fs_file));
     stdout = (struct fs_file *) kmalloc(sizeof(struct fs_file));
     stderr = (struct fs_file *) kmalloc(sizeof(struct fs_file));
 
+    strcpy(con_filename, "con:");
     err_in = vfs_open(con_filename, O_RDONLY, 0644, &stdin->f_vnode);
+    strcpy(con_filename, "con:");
     err_out = vfs_open(con_filename, O_WRONLY, 0644, &stdout->f_vnode);
+    strcpy(con_filename, "con:");
     err_err = vfs_open(con_filename, O_WRONLY, 0644, &stderr->f_vnode);
 
     if (err_in == EINVAL || err_out == EINVAL || err_err == EINVAL) {
@@ -72,7 +74,7 @@ filetable_init(void)
     filetable_addfile(stdout);
     filetable_addfile(stderr);
 
-    sys_filetable_size = 0;
+    sys_filetable_size = 3;
 
     return 0;
 }

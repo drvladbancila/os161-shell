@@ -112,7 +112,6 @@ boot(void)
 	hardclock_bootstrap();
 	vfs_bootstrap();
 	kheap_nextgeneration();
-	filetable_init();
 
 	/* Probe and initialize devices. Interrupts should come on. */
 	kprintf("Device probe...\n");
@@ -133,6 +132,7 @@ boot(void)
 	vfs_setbootfs("emu0");
 
 	kheap_nextgeneration();
+	filetable_init();
 
 	/*
 	 * Make sure various things aren't screwed up.
