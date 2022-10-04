@@ -33,14 +33,11 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 int
 main()
 {
-    int fd;
-    fd = open("exit.txt", O_CREAT|O_WRONLY);
-    close(fd);
-    int a = 0;
-    a++;
-    exit(a);
+    //printf("Bye Bye\n");
+    exit(EXIT_SUCCESS);
 }
