@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"sfs.h": "c",
+			"filetable.h": "c",
+			"current.h": "c",
+			"spl.h": "c",
+			"proc.h": "c",
+			"types.h": "c",
+			"atomic": "c",
+			"*.tcc": "c",
+			"fstream": "c",
+			"sstream": "c",
+			"syscall.h": "c",
+			"errno.h": "c",
+			"lib.h": "c",
+			"cpu.h": "c",
+			"vfs.h": "c"
+		}
+	}
+}

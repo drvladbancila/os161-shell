@@ -39,16 +39,44 @@
 struct fs_file *sys_filetable;
 struct fs_file *__sys_filetable_tail;
 unsigned int sys_filetable_size;
+struct fs_file *stdin, *stdout, *stderr;
 
 /*
 * Initialize file table head node to NULL
 */
-void
+int
 filetable_init(void)
 {
+    int err_in, err_out, err_err;
+    char con_filename[5];
     sys_filetable = NULL;
     __sys_filetable_tail = NULL;
-    sys_filetable_size = 0;
+
+    stdin = (struct fs_file *) kmalloc(sizeof(struct fs_file));
+    stdout = (struct fs_file *) kmalloc(sizeof(struct fs_file));
+    stderr = (struct fs_file *) kmalloc(sizeof(struct fs_file));
+
+    strcpy(con_filename, "con:");
+    err_in = vfs_open(con_filename, O_RDONLY, 0644, &stdin->f_vnode);
+    strcpy(con_filename, "con:");
+    err_out = vfs_open(con_filename, O_WRONLY, 0644, &stdout->f_vnode);
+    strcpy(con_filename, "con:");
+    err_err = vfs_open(con_filename, O_WRONLY, 0644, &stderr->f_vnode);
+
+    if (err_in == EINVAL || err_out == EINVAL || err_err == EINVAL) {
+        return EINVAL;
+    }
+
+    sys_filetable = stdin;
+    __sys_filetable_tail = sys_filetable;
+    sys_filetable->f_next = NULL;
+    sys_filetable->f_prev = NULL;
+    filetable_addfile(stdout);
+    filetable_addfile(stderr);
+
+    sys_filetable_size = 3;
+
+    return 0;
 }
 
 /*
@@ -59,19 +87,11 @@ filetable_init(void)
 void
 filetable_addfile(struct fs_file *newfile)
 {
-    if (sys_filetable == NULL) {
-        /* first file being allocated */
-        sys_filetable = newfile;
-        __sys_filetable_tail = sys_filetable;
-        sys_filetable->f_next = NULL;
-        sys_filetable->f_prev = NULL;
-    } else {
-        /* every other file beside the first one */
-        newfile->f_next = NULL;
-        newfile->f_prev = sys_filetable;
-        newfile->f_prev->f_next = newfile;
-        sys_filetable = newfile;
-    }
+
+    newfile->f_next = NULL;
+    newfile->f_prev = sys_filetable;
+    newfile->f_prev->f_next = newfile;
+    sys_filetable = newfile;
     sys_filetable_size++;
 }
 
@@ -93,6 +113,7 @@ filetable_removefile(struct fs_file *rmfile)
     }
 
     sys_filetable_size--;
+
     /*
     *  if this is the only file in the filetable, make sys_filetable point to
     *  NULL so that when you add a new file the sys_filetable pointer is reused

@@ -1,10 +1,10 @@
-# Makefile for testopen
+# Makefile for testread
 
 TOP=../../..
 .include "$(TOP)/mk/os161.config.mk"
 
-PROG=testopen
-SRCS=testopen.c
+PROG=testread
+SRCS=testread.c
 BINDIR=/testbin
 
 .include "$(TOP)/mk/os161.prog.mk"

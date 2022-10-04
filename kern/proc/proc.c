@@ -85,7 +85,11 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
-	for (fd = 0; fd < OPEN_MAX; fd++) {
+	proc->p_filetable[STDIN_FILENO] = stdin;
+	proc->p_filetable[STDOUT_FILENO] = stdout;
+	proc->p_filetable[STDERR_FILENO] = stderr;
+
+	for (fd = STDERR_FILENO + 1; fd < OPEN_MAX; fd++) {
 		proc->p_filetable[fd] = NULL;
 	}
 
