@@ -34,6 +34,10 @@
 #include <types/size_t.h>
 #include <sys/null.h>
 
+/* Exit status constants */
+#define EXIT_SUCCESS 0
+#define EXIT_FAILURE 1
+
 /*
  * Ascii to integer - turn a string holding a number into a number.
  */

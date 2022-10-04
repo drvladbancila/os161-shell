@@ -27,46 +27,23 @@
  * SUCH DAMAGE.
  */
 
-#include <types.h>
-#include <copyinout.h>
-#include <syscall.h>
-#include <vfs.h>
-#include <current.h>
-#include <proc.h>
-#include <limits.h>
-#include <fs.h>
-#include <kern/fcntl.h>
-#include <kern/errno.h>
-#include <addrspace.h>
-
 /*
-* System call interface function to get the process ID
-*/
+ * 	Test program for getpid syscall.
+ */
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdio.h>
+
 int
-sys_getpid(int *retpid)
+main()
 {
-    /* return process ID in retpid parameter */
-    *retpid = (int) curproc->p_id;
+    getpid();
 
-    /* this system call is always successful */
-    return 0;
-}
-
-/*
-* System call interface function to exit from a process
-* TODO: Still to understand
-*/
-int
-sys__exit(int status)
-{
-    /* Record status */
-    curproc->p_exit_status = status;
-
-    /* Release address space */
-    as_destroy(curproc->p_addrspace);
-
-    /* Exit thread */
-    thread_exit(); 
+    // UNLOCK WHEN WRITE IS AVAILABLE
+    //pid_t pid;
+    //pid = getpid();
+    //printf("Process ID is: %d\n", pid);
 
     return 0;
 }
