@@ -48,8 +48,11 @@ main()
 
     bytes = 0;
 
-    bytes = write(fd, buffer, 5);
-    printf("bytes: %d", bytes);
+    while (bytes < 5) {
+        bytes += write(fd, &buffer[bytes], 1);
+        printf("bytes: %d\n", bytes);
+    }
+
 
     close(fd);
     return 0;
