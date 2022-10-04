@@ -38,9 +38,11 @@
 int
 main()
 {
-    pid_t pid;
+    getpid();
 
-    pid = getpid();
+    // UNLOCK WHEN WRITE IS AVAILABLE
+    //pid_t pid;
+    //pid = getpid();
     //printf("Process ID is: %d\n", pid);
 
     return 0;

@@ -61,5 +61,6 @@ int sys_open(userptr_t filename, int flag, int *retfd);
 int sys_close(int fd);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 int sys_getpid(int *retpid); 
+int sys__exit(int status);
 
 #endif /* _SYSCALL_H_ */
