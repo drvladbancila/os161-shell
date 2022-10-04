@@ -44,10 +44,11 @@
 #include <uio.h>
 #include <vnode.h>
 #include <kern/errno.h>
+#include <vm.h>
 
 /*
- * System call interface function for opening file
- */
+* System call interface function for opening files
+*/
 int sys_open(userptr_t filename, int flags, int *retfd)
 {
     struct fs_file *file;
@@ -109,6 +110,9 @@ int sys_open(userptr_t filename, int flags, int *retfd)
     return 0;
 }
 
+/*
+* System call interface function for closing file
+*/
 int sys_close(int fd)
 {
     /*
@@ -128,20 +132,28 @@ int sys_close(int fd)
     return 0;
 }
 
-int sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
+/*
+* System call interface function for reading file
+*/
+int
+sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
 {
     struct fs_file *openfile;
-    struct uio ku;
+    struct uio userio;
     struct iovec iov;
-    unsigned int offset;
+    off_t offset;
     int err;
+    userptr_t bufend = buf + buflen;
 
     /* TODO: lock file while reading */
 
-    /* TODO: read should return EFAULT if
-    *  part or all of the address space pointed to by buf is invalid:
-    *  how?
+    /*
+    *  bad buffer: either you want to read from null pointer or the buffer is
+    *  partially or completely in kernel address space
     */
+    if (buf == NULL || (bufend >= (userptr_t) USERSPACETOP)) {
+        return EFAULT;
+    }
 
     /* retrieve pointer to fs_file struct from process filetable */
     openfile = curproc->p_filetable[fd];
@@ -154,23 +166,101 @@ int sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
 
     /* take the offset at which the file was left last time */
     offset = openfile->f_offset;
-    /* initialize uio (still to understand fully...) */
-    uio_kinit(&iov, &ku, (void *) buf, buflen, offset, UIO_READ);
+
+    /* initialize io vector to point to user buffer and have correct length*/
+    iov.iov_ubase = buf;
+    iov.iov_len = buflen;
+
+    /* initialize user io, specifying that the buffer belongs to userspace */
+    userio.uio_iov = &iov;
+    userio.uio_iovcnt = 1;
+    userio.uio_offset = offset;
+    userio.uio_resid = buflen;
+    userio.uio_segflg = UIO_USERSPACE;
+    userio.uio_rw = UIO_READ;
+    userio.uio_space = proc_getas();
 
     /* read from vnode and write to the uio (which writes to buf) */
-    err = VOP_READ(openfile->f_vnode, &ku);
+    err = VOP_READ(openfile->f_vnode, &userio);
 
     /* any I/O error */
     if (err) {
-        return EIO;
+        return err;
     }
 
-    kprintf("%s", (char *) buf);
+    kprintf("Read: %s\n", (char *) buf);
 
     /* give as return value the number of bytes read */
-    *retval = ku.uio_offset - openfile->f_offset;
+    *retval = userio.uio_offset - openfile->f_offset;
     /* update the file offset */
-    openfile->f_offset = ku.uio_offset;
+    openfile->f_offset = userio.uio_offset;
+
+    return 0;
+}
+
+/*
+* System call interface function for writing file
+*/
+int
+sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
+{
+    struct fs_file *openfile;
+    struct uio userio;
+    struct iovec iov;
+    unsigned int offset;
+    int err;
+    userptr_t bufend = buf + buflen;
+
+    /* TODO: lock file while writing */
+
+    /*
+    *  bad buffer: either you want to write to null pointer or the buffer is
+    *  partially or completely in kernel address space
+    */
+    if (buf == NULL || (bufend >= (userptr_t) USERSPACETOP)) {
+        return EFAULT;
+    }
+
+    /* retrieve fs_file struct pointer from file descriptor */
+    openfile = curproc->p_filetable[fd];
+    /* invalid file descriptor */
+    if (openfile == NULL) {
+        return EBADF;
+    }
+
+    /* get last offset */
+    offset = openfile->f_offset;
+
+    /* initialize io vector to point to user buffer and have correct length */
+    iov.iov_ubase = buf;
+    iov.iov_len = buflen;
+
+    /* initialize user io, specifying that the buffer belongs to userspace */
+    userio.uio_iov = &iov;
+    userio.uio_iovcnt = 1;
+    userio.uio_offset = offset;
+    userio.uio_resid = buflen;
+    userio.uio_segflg = UIO_USERSPACE;
+    userio.uio_rw = UIO_WRITE;
+    userio.uio_space = proc_getas();
+
+    /* write operation on vnode */
+    err = VOP_WRITE(openfile->f_vnode, &userio);
+
+    /*
+    *  errors during the write operation
+    *  err = 0 : no errors during VOP_WRITE
+    *  err = EIO : I/O errors during VOP_WRITE
+    *  err = ENOSPC : no space on disk
+    */
+    if (err) {
+        return err;
+    }
+
+    /* give as return value the number of bytes read */
+    *retval = userio.uio_offset - openfile->f_offset;
+    /* update the file offset */
+    openfile->f_offset = userio.uio_offset;
 
     return 0;
 }

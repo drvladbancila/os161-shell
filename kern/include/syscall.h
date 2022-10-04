@@ -60,6 +60,7 @@ int sys_reboot(int code);
 int sys_open(userptr_t filename, int flag, int *retfd);
 int sys_close(int fd);
 int sys_read(int fd, userptr_t buf, size_t buflen, int *retval);
+int sys_write(int fd, userptr_t buf, size_t buflen, int *retval);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 int sys_getpid(int *retpid); 
 
