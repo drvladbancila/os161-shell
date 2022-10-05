@@ -46,6 +46,7 @@
 #include <kern/errno.h>
 #include <vm.h>
 #include <kern/seek.h>
+#include <kern/stat.h>
 
 /*
 * System call interface function for opening files
@@ -189,7 +190,7 @@ sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
         return err;
     }
 
-    kprintf("Read: %s\n", (char *) buf);
+    //kprintf("Read: %s\n", (char *) buf);
 
     /* give as return value the number of bytes read */
     *retval = userio.uio_offset - openfile->f_offset;
@@ -213,6 +214,7 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
     userptr_t bufend = buf + buflen;
 
     /* TODO: lock file while writing */
+    /* TODO: copy buffer to kernel space */
 
     /*
     *  bad buffer: either you want to write to null pointer or the buffer is
@@ -270,28 +272,30 @@ int
 sys_lseek(int fd, __off_t pos, int whence, int *retval)
 {
     struct fs_file *openfile;
+    struct stat    fstat;
     int seekpos;
     int seekable;
-    int err, not_eof = 1;
-    struct iovec iov;
-    struct uio kio;
-    char temp_buf;
+    int err;
 
+    /* retrieve file struct from file descriptor and check it is a valid file */
     openfile = curproc->p_filetable[fd];
     if (openfile == NULL) {
         return EBADF;
     }
 
+    /* check if the file is seekable */
     seekable = VOP_ISSEEKABLE(openfile->f_vnode);
     if (seekable == false) {
         return ESPIPE;
     }
 
+    /* execute the appropriate lseek mode depending on whence */
     switch (whence)
     {
     case SEEK_SET:
         seekpos = pos;
-        if (pos < 0) {
+        /* check if the seeking position is positive */
+        if (seekpos < 0) {
             return EINVAL;
         } else {
             openfile->f_offset = seekpos;
@@ -306,16 +310,14 @@ sys_lseek(int fd, __off_t pos, int whence, int *retval)
         }
         break;
     case SEEK_END:
-        uio_kinit(&iov, &kio, &temp_buf, 1, openfile->f_offset, UIO_READ);
-        while (not_eof) {
-            err = VOP_READ(openfile->f_vnode, &kio);
-            if (err) {
-                return err;
-            }
-            not_eof = openfile->f_offset - kio.uio_offset;
-            openfile->f_offset = kio.uio_offset;
+        /* VOP_STAT returns some infos about the file */
+        err = VOP_STAT(openfile->f_vnode, &fstat);
+        if (err) {
+            return err;
         }
-        seekpos = openfile->f_offset + pos;
+        //kprintf("Size: %lld\n", fstat.st_size);
+        /* fstat.st_size contains the size of the file */
+        seekpos = (fstat.st_size - 1) + pos;
 
         if (seekpos < 0) {
             return EINVAL;
@@ -328,6 +330,7 @@ sys_lseek(int fd, __off_t pos, int whence, int *retval)
         break;
     }
 
+    /* return the current seek position */
     *retval = seekpos;
     return 0;
 }
