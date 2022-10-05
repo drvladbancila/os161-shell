@@ -45,6 +45,7 @@
 #include <vnode.h>
 #include <kern/errno.h>
 #include <vm.h>
+#include <kern/seek.h>
 
 /*
 * System call interface function for opening files
@@ -262,5 +263,71 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
     /* update the file offset */
     openfile->f_offset = userio.uio_offset;
 
+    return 0;
+}
+
+int
+sys_lseek(int fd, __off_t pos, int whence, int *retval)
+{
+    struct fs_file *openfile;
+    int seekpos;
+    int seekable;
+    int err, not_eof = 1;
+    struct iovec iov;
+    struct uio kio;
+    char temp_buf;
+
+    openfile = curproc->p_filetable[fd];
+    if (openfile == NULL) {
+        return EBADF;
+    }
+
+    seekable = VOP_ISSEEKABLE(openfile->f_vnode);
+    if (seekable == false) {
+        return ESPIPE;
+    }
+
+    switch (whence)
+    {
+    case SEEK_SET:
+        seekpos = pos;
+        if (pos < 0) {
+            return EINVAL;
+        } else {
+            openfile->f_offset = seekpos;
+        }
+        break;
+    case SEEK_CUR:
+        seekpos = openfile->f_offset + pos;
+        if (seekpos < 0) {
+            return EINVAL;
+        } else {
+            openfile->f_offset = seekpos;
+        }
+        break;
+    case SEEK_END:
+        uio_kinit(&iov, &kio, &temp_buf, 1, openfile->f_offset, UIO_READ);
+        while (not_eof) {
+            err = VOP_READ(openfile->f_vnode, &kio);
+            if (err) {
+                return err;
+            }
+            not_eof = openfile->f_offset - kio.uio_offset;
+            openfile->f_offset = kio.uio_offset;
+        }
+        seekpos = openfile->f_offset + pos;
+
+        if (seekpos < 0) {
+            return EINVAL;
+        } else {
+            openfile->f_offset = seekpos;
+        }
+        break;
+    default:
+        return EINVAL;
+        break;
+    }
+
+    *retval = seekpos;
     return 0;
 }
