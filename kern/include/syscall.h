@@ -64,6 +64,8 @@ int sys_write(int fd, userptr_t buf, size_t buflen, int *retval);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 int sys_getpid(int *retpid); 
 int sys__exit(int status);
-int sys___getcwd(char * buf, size_t size);
+int sys___getcwd(char * buf, size_t size, char *retval);
+int sys_chdir(char * pathname);
+
 
 #endif /* _SYSCALL_H_ */
