@@ -264,3 +264,34 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
 
     return 0;
 }
+
+/* Stores in the address selected by buf the name of the working directory
+* if buf is not big enough to contain it, returns a null pointer and set errno
+*/
+int
+sys___getcwd (char *buf, size_t size) 
+{
+    int retval = 0, error;
+    struct uio userio;  
+    struct iovec iov;
+    struct vnode cwd;
+
+    iov.iov_ubase = (userptr_t) buf;
+    iov.iov_len = size;
+
+    userio.uio_iov = &iov;
+    userio.uio_resid = size;
+    userio.uio_segflg = UIO_USERSPACE;
+    userio.uio_rw = UIO_READ;
+    userio.uio_space = proc_getas();
+
+    error = vfs_getcwd(&userio);
+    if (error) {
+        kprintf("error vfs_getcwd\n");
+    } else {
+        kprintf("Working directory: ");
+        kprintf("%s\n", buf);
+    }
+
+    return retval;
+}
