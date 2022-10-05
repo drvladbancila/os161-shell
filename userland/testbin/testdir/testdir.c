@@ -27,45 +27,40 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _SYSCALL_H_
-#define _SYSCALL_H_
-
-
-#include <cdefs.h> /* for __DEAD */
-struct trapframe; /* from <machine/trapframe.h> */
-
 /*
- * The system call dispatcher.
+ * 	Test program for getpid syscall.
  */
 
-void syscall(struct trapframe *tf);
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <limits.h>
 
-/*
- * Support functions.
- */
+int
+main()
+{
+	char buf[PATH_MAX+1], *p;
 
-/* Helper for fork(). You write this. */
-void enter_forked_process(struct trapframe *tf);
+	// print current working directory (root)
+	p = getcwd(buf, sizeof(buf));
+	if (p == NULL) {
+		printf("getcwd returned NULL\n");
+		//err(1, ".");
+	} else {
+        printf("%s\n", p);
+    }
 
-/* Enter user mode. Does not return. */
-__DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
-		       vaddr_t stackptr, vaddr_t entrypoint);
+	// change directory to prova
+	chdir("paolo");
 
+	// prints again the cwd 
+	p = getcwd(buf, sizeof(buf));
+	if (p == NULL) {
+		printf("getcwd returned NULL\n");
+		//err(1, ".");
+	} else {
+        printf("%s\n", p);
+    }
 
-/*
- * Prototypes for IN-KERNEL entry points for system call implementations.
- */
-
-int sys_reboot(int code);
-int sys_open(userptr_t filename, int flag, int *retfd);
-int sys_close(int fd);
-int sys_read(int fd, userptr_t buf, size_t buflen, int *retval);
-int sys_write(int fd, userptr_t buf, size_t buflen, int *retval);
-int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
-int sys_getpid(int *retpid); 
-int sys__exit(int status);
-int sys___getcwd(char * buf, size_t size, int *retval);
-int sys_chdir(char * pathname);
-
-
-#endif /* _SYSCALL_H_ */
+	return 0;
+}

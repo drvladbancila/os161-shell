@@ -265,32 +265,68 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
     return 0;
 }
 
-/* Stores in the address selected by buf the name of the working directory
-* if buf is not big enough to contain it, returns a null pointer and set errno
+/* Stores in the address selected by buf the name of the working directory,
+ * terminated with zero.
+ * retval is the effective dimension of the returned buffer, -1 on fail
+ * returns 0 on success and ENOENT, EIO or EFAULT on fails  
 */
 int
-sys___getcwd (char *buf, size_t size) 
+sys___getcwd (char *buf, size_t size, int *retval) 
 {
-    int retval = 0, error;
+    int error;
     struct uio userio;  
     struct iovec iov;
-    struct vnode cwd;
 
+    userptr_t bufend = (userptr_t) (buf + size);
+    if (buf == NULL || (bufend >= (userptr_t) USERSPACETOP)) {
+        return EFAULT;
+    }
+    (void)retval;
+    /*
     iov.iov_ubase = (userptr_t) buf;
     iov.iov_len = size;
 
-    userio.uio_iov = &iov;
-    userio.uio_resid = size;
-    userio.uio_segflg = UIO_USERSPACE;
-    userio.uio_rw = UIO_READ;
     userio.uio_space = proc_getas();
+    */
+    uio_kinit(&iov, &userio, buf, size, 0, UIO_READ);
 
+    //TODO: use function to initialize uio
+    //TODO: return errors as described in man
     error = vfs_getcwd(&userio);
+
     if (error) {
-        kprintf("error vfs_getcwd\n");
+        kprintf("vfs_getcwd failed (%s)\n", strerror(error));
+        *retval = -1;
     } else {
         kprintf("Working directory: ");
         kprintf("%s\n", buf);
+
+        //null termination
+        buf[size - 1 - userio.uio_resid] = 0;
+
+        //return the length of returned data
+        *retval = size - userio.uio_resid;
+    }
+
+    //TODO: return size, not buffer
+
+    return 0;
+}
+
+/* Sets the current working directory to the one named in pathname 
+*/
+int 
+sys_chdir(char *pathname) 
+{
+    int retval = 0, error;
+
+    //TODO: return errors as man page
+    error = vfs_chdir(pathname);
+    if (error) {
+        retval = -1;
+        kprintf("Error in calling sys_chdir\n");
+    } else {
+        kprintf("CWD changed succesfully\n");
     }
 
     return retval;
