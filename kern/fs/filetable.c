@@ -36,11 +36,7 @@
 #include <kern/errno.h>
 #include <lib.h>
 
-struct fs_file *sys_filetable;
-struct fs_file *__sys_filetable_tail;
-unsigned int sys_filetable_size;
-struct fs_file *stdin, *stdout, *stderr;
-
+struct fs_filetable sys_filetable;
 /*
 * Initialize file table head node to NULL
 */
@@ -49,32 +45,43 @@ filetable_init(void)
 {
     int err_in, err_out, err_err;
     char con_filename[5];
-    sys_filetable = NULL;
-    __sys_filetable_tail = NULL;
 
-    stdin = (struct fs_file *) kmalloc(sizeof(struct fs_file));
-    stdout = (struct fs_file *) kmalloc(sizeof(struct fs_file));
-    stderr = (struct fs_file *) kmalloc(sizeof(struct fs_file));
+    sys_filetable.stdin = (struct fs_file *) kmalloc(sizeof(struct fs_file));
+    sys_filetable.stdout = (struct fs_file *) kmalloc(sizeof(struct fs_file));
+    sys_filetable.stderr = (struct fs_file *) kmalloc(sizeof(struct fs_file));
+
+    if (sys_filetable.stdin == NULL || sys_filetable.stdout == NULL
+     || sys_filetable.stderr == NULL) {
+        return ENOMEM;
+     }
 
     strcpy(con_filename, "con:");
-    err_in = vfs_open(con_filename, O_RDONLY, 0644, &stdin->f_vnode);
+    err_in = vfs_open(con_filename, O_RDONLY, 0644, &sys_filetable.stdin->f_vnode);
     strcpy(con_filename, "con:");
-    err_out = vfs_open(con_filename, O_WRONLY, 0644, &stdout->f_vnode);
+    err_out = vfs_open(con_filename, O_WRONLY, 0644, &sys_filetable.stdout->f_vnode);
     strcpy(con_filename, "con:");
-    err_err = vfs_open(con_filename, O_WRONLY, 0644, &stderr->f_vnode);
+    err_err = vfs_open(con_filename, O_WRONLY, 0644, &sys_filetable.stderr->f_vnode);
 
-    if (err_in == EINVAL || err_out == EINVAL || err_err == EINVAL) {
-        return EINVAL;
+    if (err_in) {
+        return err_in;
     }
 
-    sys_filetable = stdin;
-    __sys_filetable_tail = sys_filetable;
-    sys_filetable->f_next = NULL;
-    sys_filetable->f_prev = NULL;
-    filetable_addfile(stdout);
-    filetable_addfile(stderr);
+    if (err_out) {
+        return err_out;
+    }
 
-    sys_filetable_size = 3;
+    if(err_err) {
+        return err_err;
+    }
+
+    sys_filetable.head = sys_filetable.stdin;
+    sys_filetable.tail = sys_filetable.head;
+    sys_filetable.head->f_next = NULL;
+    sys_filetable.head->f_prev = NULL;
+    filetable_addfile(sys_filetable.stdout);
+    filetable_addfile(sys_filetable.stderr);
+
+    sys_filetable.size = 3;
 
     return 0;
 }
@@ -89,10 +96,10 @@ filetable_addfile(struct fs_file *newfile)
 {
 
     newfile->f_next = NULL;
-    newfile->f_prev = sys_filetable;
+    newfile->f_prev = sys_filetable.head;
     newfile->f_prev->f_next = newfile;
-    sys_filetable = newfile;
-    sys_filetable_size++;
+    sys_filetable.head = newfile;
+    sys_filetable.size++;
 }
 
 /*
@@ -112,33 +119,43 @@ filetable_removefile(struct fs_file *rmfile)
         rmfile->f_next->f_prev = rmfile->f_prev;
     }
 
-    sys_filetable_size--;
+    sys_filetable.size--;
 
     /*
     *  if this is the only file in the filetable, make sys_filetable point to
     *  NULL so that when you add a new file the sys_filetable pointer is reused
     */
     if (rmfile->f_prev == NULL && rmfile->f_next == NULL) {
-        sys_filetable = NULL;
+        sys_filetable.head = NULL;
+        sys_filetable.tail = NULL;
     }
     /* finally, deallocate the fs_file structure from kernel space */
     kfree((void *) rmfile);
 }
 
 /*
-* Returns the size of the system file pointer
+* Returns the size ofstdin the system file pointer
 */
-unsigned int
+size_t
 filetable_size(void)
 {
-    return sys_filetable_size;
+    return sys_filetable.size;
+}
+
+/*
+* Returns youngest element in the system file table
+*/
+struct fs_file *
+filetable_head(void)
+{
+    return sys_filetable.head;
 }
 
 /*
 * Returns oldest element in the system file table
 */
 struct fs_file *
-filetable_gettail(void)
+filetable_tail(void)
 {
-    return __sys_filetable_tail;
+    return sys_filetable.tail;
 }
