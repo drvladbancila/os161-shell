@@ -52,8 +52,8 @@ main()
         bytes = read(fd, &buffer[i], 1);
         i++;
     }
+    printf("read: %s", buffer);
 
-    (void) bytes;
     close(fd);
     return 0;
 }
