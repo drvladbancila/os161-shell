@@ -44,7 +44,6 @@
 #include <uio.h>
 #include <vnode.h>
 #include <kern/errno.h>
-#include <vm.h>
 #include <kern/seek.h>
 #include <kern/stat.h>
 
@@ -58,6 +57,14 @@ int sys_open(userptr_t filename, int flags, int *retfd)
     int fd, err;
     mode_t mode;
     char *kfilename = NULL;
+    size_t filename_len;
+
+    filename_len = strlen((char *) filename) + 1;
+
+    /* check if the filename is a valid buffer in userspace */
+    if (check_buffer(filename, filename_len)) {
+        return EFAULT;
+    }
 
     /* copy filename into kernel memory space */
     kfilename = kstrdup((char *)filename);
@@ -77,9 +84,9 @@ int sys_open(userptr_t filename, int flags, int *retfd)
     mode = 0644;
     /* get vnode for the file */
     err = vfs_open(kfilename, flags, mode, &file_vnode);
-    if (err == EINVAL)
+    if (err)
     {
-        return EINVAL;
+        return err;
     }
 
     /* initialize filetable entry */
@@ -93,18 +100,24 @@ int sys_open(userptr_t filename, int flags, int *retfd)
     filetable_addfile(file);
 
     /* find first available file descriptor */
-    for (fd = 0; fd < OPEN_MAX; fd++)
+    for (fd = 3; fd < OPEN_MAX; fd++)
     {
         if (curproc->p_filetable[fd] == NULL)
         {
+       /*
+        *  save into process filetable the pointer to the entry in the system
+        *  file table at the file descriptor position previously found
+        */
+            curproc->p_filetable[fd] = file;
             break;
         }
     }
-    /*
-     *  save into process filetable the pointer to the entry in the system
-     *  file table at the file descriptor position previously found
-     */
-    curproc->p_filetable[fd] = file;
+
+    /* process filetable is full, can't open a new file */
+    if (fd == OPEN_MAX) {
+        return EMFILE;
+    }
+
     // kprintf("Opened file with file descriptor: %d\n", fd);
     /* return file descriptor in retfd parameter */
     *retfd = fd;
@@ -125,10 +138,19 @@ int sys_close(int fd)
     {
         return EINVAL;
     }
-    /* if the file is open, then close it with vfs_close */
+
+    /* if the file is open, then close it with vfs_close and decrease refcount */
     vfs_close(curproc->p_filetable[fd]->f_vnode);
-    /* remove file from system filetable and process filetable */
-    filetable_removefile(curproc->p_filetable[fd]);
+
+    KASSERT(curproc->p_filetable[fd]->f_refcount > 0);
+    curproc->p_filetable[fd]->f_refcount--;
+
+    if (curproc->p_filetable[fd]->f_refcount == 0) {
+        /* remove file from system filetable and process filetable */
+        filetable_removefile(curproc->p_filetable[fd]);
+    }
+
+    /* release fd in the process filetable so that it can be used by another open() */
     curproc->p_filetable[fd] = NULL;
     // kprintf("Closed file with file descriptor: %d\n", fd);
     return 0;
@@ -145,7 +167,6 @@ sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
     struct iovec iov;
     off_t offset;
     int err;
-    userptr_t bufend = buf + buflen;
 
     /* TODO: lock file while reading */
 
@@ -153,7 +174,7 @@ sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
     *  bad buffer: either you want to read from null pointer or the buffer is
     *  partially or completely in kernel address space
     */
-    if (buf == NULL || (bufend >= (userptr_t) USERSPACETOP)) {
+    if (check_buffer(buf, buflen)) {
         return EFAULT;
     }
 
@@ -211,7 +232,6 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
     struct iovec iov;
     unsigned int offset;
     int err;
-    userptr_t bufend = buf + buflen;
 
     /* TODO: lock file while writing */
     /* TODO: copy buffer to kernel space */
@@ -220,7 +240,7 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
     *  bad buffer: either you want to write to null pointer or the buffer is
     *  partially or completely in kernel address space
     */
-    if (buf == NULL || (bufend >= (userptr_t) USERSPACETOP)) {
+    if (check_buffer(buf, buflen)) {
         return EFAULT;
     }
 
