@@ -134,9 +134,9 @@ int sys_close(int fd)
      *  check if there is an open file corresponding to the file descriptor
      *  passed as argument
      */
-    if (curproc->p_filetable[fd] == NULL)
+    if (curproc->p_filetable[fd] == NULL || fd < 0 || fd > OPEN_MAX)
     {
-        return EINVAL;
+        return EBADF;
     }
 
     /* if the file is open, then close it with vfs_close and decrease refcount */
@@ -182,7 +182,7 @@ sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
     openfile = curproc->p_filetable[fd];
 
     /* if pointer is NULL then the file descriptor is invalid */
-    if (openfile == NULL)
+    if (openfile == NULL || fd < 0 || fd > OPEN_MAX)
     {
         return EBADF;
     }
@@ -247,7 +247,7 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
     /* retrieve fs_file struct pointer from file descriptor */
     openfile = curproc->p_filetable[fd];
     /* invalid file descriptor */
-    if (openfile == NULL) {
+    if (openfile == NULL || fd < 0 || fd > OPEN_MAX) {
         return EBADF;
     }
 
@@ -302,7 +302,7 @@ sys_lseek(int fd, __off_t pos, int whence, int *retval)
 
     /* retrieve file struct from file descriptor and check it is a valid file */
     openfile = curproc->p_filetable[fd];
-    if (openfile == NULL) {
+    if (openfile == NULL || fd < 0 || fd > OPEN_MAX) {
         return EBADF;
     }
 
