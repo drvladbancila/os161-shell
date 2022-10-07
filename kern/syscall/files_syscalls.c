@@ -95,6 +95,10 @@ int sys_open(userptr_t filename, int flags, int *retfd)
     file->f_lock = false;
     file->f_refcount = 1;
     file->f_mode = mode;
+    file->f_lock = lock_create(kfilename);
+    if (file->f_lock == NULL) {
+        return ENOMEM;
+    }
 
     /* add file to system filetable */
     filetable_addfile(file);
@@ -134,8 +138,13 @@ int sys_close(int fd)
      *  check if there is an open file corresponding to the file descriptor
      *  passed as argument
      */
-    if (curproc->p_filetable[fd] == NULL || fd < 0 || fd > OPEN_MAX)
-    {
+    if (fd < 0 || fd > OPEN_MAX) {
+        return EBADF;
+    }
+
+    lock_acquire(curproc->p_filetable[fd]->f_lock);
+
+    if (curproc->p_filetable[fd] == NULL) {
         return EBADF;
     }
 
@@ -148,6 +157,8 @@ int sys_close(int fd)
     if (curproc->p_filetable[fd]->f_refcount == 0) {
         /* remove file from system filetable and process filetable */
         filetable_removefile(curproc->p_filetable[fd]);
+    } else {
+        lock_release(curproc->p_filetable[fd]->f_lock);
     }
 
     /* release fd in the process filetable so that it can be used by another open() */
@@ -168,8 +179,6 @@ sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
     off_t offset;
     int err;
 
-    /* TODO: lock file while reading */
-
     /*
     *  bad buffer: either you want to read from null pointer or the buffer is
     *  partially or completely in kernel address space
@@ -178,11 +187,16 @@ sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
         return EFAULT;
     }
 
+    if (fd < 0 || fd >= OPEN_MAX) {
+        return EBADF;
+    }
+
+    lock_acquire(curproc->p_filetable[fd]->f_lock);
     /* retrieve pointer to fs_file struct from process filetable */
     openfile = curproc->p_filetable[fd];
 
     /* if pointer is NULL then the file descriptor is invalid */
-    if (openfile == NULL || fd < 0 || fd > OPEN_MAX)
+    if (openfile == NULL)
     {
         return EBADF;
     }
@@ -217,6 +231,7 @@ sys_read(int fd, userptr_t buf, size_t buflen, int *retval)
     *retval = userio.uio_offset - openfile->f_offset;
     /* update the file offset */
     openfile->f_offset = userio.uio_offset;
+    lock_release(openfile->f_lock);
 
     return 0;
 }
@@ -233,9 +248,6 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
     unsigned int offset;
     int err;
 
-    /* TODO: lock file while writing */
-    /* TODO: copy buffer to kernel space */
-
     /*
     *  bad buffer: either you want to write to null pointer or the buffer is
     *  partially or completely in kernel address space
@@ -244,10 +256,15 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
         return EFAULT;
     }
 
+    if (fd < 0 || fd >= OPEN_MAX) {
+        return EBADF;
+    }
+
+    lock_acquire(curproc->p_filetable[fd]->f_lock);
     /* retrieve fs_file struct pointer from file descriptor */
     openfile = curproc->p_filetable[fd];
     /* invalid file descriptor */
-    if (openfile == NULL || fd < 0 || fd > OPEN_MAX) {
+    if (openfile == NULL) {
         return EBADF;
     }
 
@@ -284,6 +301,7 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
     *retval = userio.uio_offset - openfile->f_offset;
     /* update the file offset */
     openfile->f_offset = userio.uio_offset;
+    lock_release(openfile->f_lock);
 
     return 0;
 }
@@ -300,9 +318,14 @@ sys_lseek(int fd, __off_t pos, int whence, int *retval)
     int seekable;
     int err;
 
+    if (fd < 0 || fd >= OPEN_MAX) {
+        return EBADF;
+    }
+    lock_acquire(curproc->p_filetable[fd]->f_lock);
+
     /* retrieve file struct from file descriptor and check it is a valid file */
     openfile = curproc->p_filetable[fd];
-    if (openfile == NULL || fd < 0 || fd > OPEN_MAX) {
+    if (openfile == NULL) {
         return EBADF;
     }
 
@@ -352,7 +375,7 @@ sys_lseek(int fd, __off_t pos, int whence, int *retval)
         return EINVAL;
         break;
     }
-
+    lock_release(openfile->f_lock);
     /* return the current seek position */
     *retval = seekpos;
     return 0;
@@ -367,20 +390,21 @@ sys_dup2(int oldfd, int newfd, int *retval)
 {
     struct fs_file *source, *dest;
 
+    if (oldfd < 0 || newfd < 0 || oldfd >= OPEN_MAX || newfd >= OPEN_MAX) {
+        return EBADF;
+    }
+
+    lock_acquire(curproc->p_filetable[oldfd]->f_lock);
+    lock_acquire(curproc->p_filetable[newfd]->f_lock);
+
     source = curproc->p_filetable[oldfd];
     dest = curproc->p_filetable[newfd];
 
     /*
-     * if the oldfd does not point to nothing is not a valid fd, similarly
-     * if the file descriptors are negative
+     * if the oldfd does not point to nothing is not a valid fd
      */
-    if (source == NULL || oldfd < 0 || newfd < 0) {
+    if (source == NULL) {
         return EBADF;
-    }
-
-
-    if (oldfd >= OPEN_MAX || newfd >= OPEN_MAX) {
-        return EMFILE;
     }
 
     /*
@@ -395,6 +419,9 @@ sys_dup2(int oldfd, int newfd, int *retval)
     /* now newfd points to the same handle as oldfd and increase the refcount */
     dest = source;
     dest->f_refcount++;
+
+    lock_release(source->f_lock);
+    lock_release(dest->f_lock);
 
     *retval = newfd;
 
