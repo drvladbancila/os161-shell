@@ -32,6 +32,7 @@
 
 #include <limits.h>
 #include <types.h>
+#include <lib.h>
 #include <kern/fcntl.h>
 #include <kern/unistd.h>
 #include <vfs.h>
@@ -109,16 +110,25 @@ struct fs_file {
 * New files get appended at the head.
 * Removed files are freed from the heap.
 */
-extern struct fs_file *sys_filetable_head;
-extern unsigned int sys_filetable_size;
-extern struct fs_file *stdin, *stdout, *stderr;
+
+struct fs_filetable {
+	struct fs_file *head;
+	struct fs_file *tail;
+	size_t size;
+	struct fs_file *stdin;
+	struct fs_file *stdout;
+	struct fs_file *stderr;
+};
+
+extern struct fs_filetable sys_filetable;
 
 /* Functions to use the filetable */
 int filetable_init(void);
 void filetable_addfile(struct fs_file *newfile);
 void filetable_removefile(struct fs_file *rmfile_node);
-unsigned int filetable_size(void);
-struct fs_file *filetable_gettail(void);
+size_t filetable_size(void);
+struct fs_file *filetable_head(void);
+struct fs_file *filetable_tail(void);
 
 /*
  * Macros to shorten the calling sequences.

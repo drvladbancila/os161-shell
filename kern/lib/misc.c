@@ -30,6 +30,7 @@
 #include <types.h>
 #include <kern/errmsg.h>
 #include <lib.h>
+#include <machine/vm.h>
 
 /*
  * Like strdup, but calls kmalloc.
@@ -59,4 +60,20 @@ strerror(int errcode)
 	}
 	panic("Invalid error code %d\n", errcode);
 	return NULL;
+}
+
+/*
+ * Function that checks if a user buffer is valid: does not point to NULL and
+ * is not partially or completely in kernel space
+ */
+
+int
+check_buffer(userptr_t buffer, size_t buflen)
+{
+	userptr_t bufend = buffer + buflen;
+	if (buffer == NULL || bufend >= (userptr_t) USERSPACETOP) {
+		return 1;
+	} else {
+		return 0;
+	}
 }

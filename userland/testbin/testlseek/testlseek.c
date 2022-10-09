@@ -53,9 +53,9 @@ main()
     bytes = read(fd, buffer2, 5);
     printf("%s : %d\n", buffer2, bytes);
 
-    lseek(fd, -1, SEEK_SET);
-    bytes = read(fd, buffer2, 5);
-    printf("%s : %d\n", buffer2, bytes);
-
+    if (lseek(fd, -1, SEEK_SET) > 0) {
+        bytes = read(fd, buffer2, 5);
+        printf("%s : %d\n", buffer2, bytes);
+    }
     return 0;
 }
