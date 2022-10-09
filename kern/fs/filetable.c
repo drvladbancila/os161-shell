@@ -66,7 +66,7 @@ filetable_init(void)
     err_out = vfs_open(con_filename, O_WRONLY, 0644, &sys_filetable.stdout->f_vnode);
     strcpy(con_filename, "con:");
     err_err = vfs_open(con_filename, O_WRONLY, 0644, &sys_filetable.stderr->f_vnode);
-
+    
     if (err_in) {
         return err_in;
     }

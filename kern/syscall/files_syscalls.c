@@ -147,7 +147,6 @@ int sys_close(int fd)
     if (curproc->p_filetable[fd] == NULL) {
         return EBADF;
     }
-
     /* if the file is open, then close it with vfs_close and decrease refcount */
     vfs_close(curproc->p_filetable[fd]->f_vnode);
 
@@ -401,7 +400,8 @@ sys_dup2(int oldfd, int newfd, int *retval)
     dest = curproc->p_filetable[newfd];
 
     /*
-     * if the oldfd does not point to nothing is not a valid fd
+     * if the oldfd does not point to nothing is not a valid fd, similarly
+     * if the file descriptors are negative
      */
     if (source == NULL) {
         return EBADF;
