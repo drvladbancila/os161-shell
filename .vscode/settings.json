@@ -13,7 +13,8 @@
         "lib.h": "c",
         "unistd.h": "c",
         "cdefs.h": "c",
-        "trapframe.h": "c"
+        "trapframe.h": "c",
+        "uio.h": "c"
     },
     "todo-tree.tree.scanMode": "workspace only"
 }

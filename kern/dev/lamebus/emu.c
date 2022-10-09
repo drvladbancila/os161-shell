@@ -779,6 +779,7 @@ emufs_lookup(struct vnode *dir, char *pathname, struct vnode **ret)
 		return result;
 	}
 
+
 	result = emufs_loadvnode(ef, handle, isdir, &newguy);
 	if (result) {
 		emu_close(ev->ev_emu, handle);
@@ -836,13 +837,16 @@ emufs_namefile(struct vnode *v, struct uio *uio)
 		 * Root directory - name is empty string
 		 */
 		return 0;
+	} else {
+		emufs_read(v, uio);
+		//uiomove(v->vn_fs->fs_data, 3, uio);
 	}
 
 	(void)uio;
 
-	return ENOSYS;
+	return 0;
+	//return ENOSYS;
 }
-
 /*
  * VOP_MMAP
  */

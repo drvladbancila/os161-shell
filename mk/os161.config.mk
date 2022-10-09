@@ -313,7 +313,7 @@ PLATFORM=sys161
 MACHINE=mips
 
 # Compilation
-DEBUG=-O2
+DEBUG=-O0
 WARNINGS=-Wall -W -Wwrite-strings -Wmissing-prototypes
 WERROR=-Werror
 

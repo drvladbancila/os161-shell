@@ -35,11 +35,14 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
+#include <errno.h>
 
 int
 main()
 {
 	char buf[PATH_MAX+1], *p;
+	int retval;
 
 	// print current working directory (root)
 	p = getcwd(buf, sizeof(buf));
@@ -51,7 +54,10 @@ main()
     }
 
 	// change directory to prova
-	chdir("paolo");
+	retval = chdir("emu0:/pi/");
+	if (retval == -1) {
+		printf("Chdir failed with errno: %s", strerror(errno));
+	}
 
 	// prints again the cwd 
 	p = getcwd(buf, sizeof(buf));
@@ -61,6 +67,20 @@ main()
 	} else {
         printf("%s\n", p);
     }
+/*
+	retval = chdir("emu0:/");
+	if (retval == -1) {
+		printf("Chdir failed with errno: %s", strerror(errno));
+	}
 
+	// prints again the cwd 
+	p = getcwd(buf, sizeof(buf));
+	if (p == NULL) {
+		printf("getcwd returned NULL\n");
+		//err(1, ".");
+	} else {
+        printf("%s\n", p);
+    }
+*/
 	return 0;
 }

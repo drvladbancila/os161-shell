@@ -290,19 +290,20 @@ sys___getcwd (char *buf, size_t size, int *retval)
     */
     uio_kinit(&iov, &userio, buf, size, 0, UIO_READ);
 
-    //TODO: use function to initialize uio
     //TODO: return errors as described in man
+    // TODO: write description of errors as vlad
     error = vfs_getcwd(&userio);
 
     if (error) {
         kprintf("vfs_getcwd failed (%s)\n", strerror(error));
         *retval = -1;
+        return error;
     } else {
         kprintf("Working directory: ");
         kprintf("%s\n", buf);
 
         //null termination
-        buf[size - 1 - userio.uio_resid] = 0;
+        buf[size - userio.uio_resid] = 0;
 
         //return the length of returned data
         *retval = size - userio.uio_resid;
@@ -316,18 +317,20 @@ sys___getcwd (char *buf, size_t size, int *retval)
 /* Sets the current working directory to the one named in pathname 
 */
 int 
-sys_chdir(char *pathname) 
+sys_chdir(char *pathname, int *retval) 
 {
-    int retval = 0, error;
+    int error;
 
     //TODO: return errors as man page
     error = vfs_chdir(pathname);
     if (error) {
-        retval = -1;
+        *retval = -1;
         kprintf("Error in calling sys_chdir\n");
+        return error;
     } else {
         kprintf("CWD changed succesfully\n");
+        *retval = 0;
     }
 
-    return retval;
+    return 0;
 }

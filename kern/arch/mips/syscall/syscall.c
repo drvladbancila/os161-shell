@@ -140,14 +140,14 @@ syscall(struct trapframe *tf)
 
 		case SYS__exit:
 		err = sys__exit((int)tf->tf_a0);
-		break;S
+		break;
 
 		case SYS___getcwd:
       	err = sys___getcwd((char *)tf->tf_a0, (size_t)tf->tf_a1, &retval);
     	break;
 	
 		case SYS_chdir:
-		err = sys_chdir((char *)tf->tf_a0);
+		err = sys_chdir((char *)tf->tf_a0, &retval);
 		break;
 
 	    default:
