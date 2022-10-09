@@ -288,6 +288,9 @@ sys_write(int fd, userptr_t buf, size_t buflen, int *retval)
     return 0;
 }
 
+/*
+* System call interface function for moving offset inside a file
+*/
 int
 sys_lseek(int fd, __off_t pos, int whence, int *retval)
 {
@@ -352,5 +355,48 @@ sys_lseek(int fd, __off_t pos, int whence, int *retval)
 
     /* return the current seek position */
     *retval = seekpos;
+    return 0;
+}
+
+/*
+* System call interface function for making two file descriptors point to the
+* same file handle
+*/
+int
+sys_dup2(int oldfd, int newfd, int *retval)
+{
+    struct fs_file *source, *dest;
+
+    source = curproc->p_filetable[oldfd];
+    dest = curproc->p_filetable[newfd];
+
+    /*
+     * if the oldfd does not point to nothing is not a valid fd, similarly
+     * if the file descriptors are negative
+     */
+    if (source == NULL || oldfd < 0 || newfd < 0) {
+        return EBADF;
+    }
+
+
+    if (oldfd >= OPEN_MAX || newfd >= OPEN_MAX) {
+        return EMFILE;
+    }
+
+    /*
+     * if the destination file handle is not an open file, then simply link
+     * the destination file with the source file, else you first have to close
+     * the open file pointer by newfd
+     */
+    if (dest != NULL) {
+        sys_close(newfd);
+    }
+
+    /* now newfd points to the same handle as oldfd and increase the refcount */
+    dest = source;
+    dest->f_refcount++;
+
+    *retval = newfd;
+
     return 0;
 }
