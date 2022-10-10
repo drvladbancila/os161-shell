@@ -64,7 +64,7 @@ int sys_write(int fd, userptr_t buf, size_t buflen, int *retval);
 int sys_lseek(int fd, __off_t pos, int whence, int *retval);
 int sys_dup2(int oldfd, int newfd, int *retval);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
-int sys_getpid(int *retpid); 
+int sys_getpid(int *retpid);
 int sys_fork(struct trapframe *tf, int *retval);
 int sys__exit(int status);
 

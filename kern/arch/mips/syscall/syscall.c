@@ -220,28 +220,21 @@ syscall(struct trapframe *tf)
 void
 enter_forked_process(void *data1, unsigned long data2)
 {
-	struct trapframe *tf = (struct trapframe *)data1;
+	struct trapframe *parent_copy_tf = (struct trapframe *) data1;
+	struct trapframe tf;
 	(void) data2;
-	
+
 	/* set child return values */
-	tf->tf_v0 = 0;
-	tf->tf_a3 = 0;
+	parent_copy_tf->tf_v0 = 0;
+	parent_copy_tf->tf_a3 = 0;
 
 	/* increase child program counter */
-	tf->tf_epc += 4;
+	parent_copy_tf->tf_epc += 4;
 
 	/* activate address space */
 	as_activate();
 
     /* enter user mode */
-	mips_usermode(tf);
-
+	tf = *parent_copy_tf;
+	mips_usermode(&tf);
 }
-
-
-
-
-
-
-    /* initialize return value */
-    //*retval = -1;

@@ -52,7 +52,7 @@ sys_getpid(int *retpid)
 /*
 * System call interface function to fork a process
 */
-int 
+int
 sys_fork(struct trapframe *tf, int *retval){
 
     struct trapframe *child_tf;
