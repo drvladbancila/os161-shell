@@ -56,7 +56,7 @@
 # (Compilation.)
 #
 # DEBUG				Compiler option for debug vs. optimize.
-#				Default: -O2
+#				Default: -O0
 #
 # WARNINGS			Compiler options for warnings.
 #				Default: -Wall -Wextra -Wwrite-strings
