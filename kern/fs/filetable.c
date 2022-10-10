@@ -66,7 +66,7 @@ filetable_init(void)
     err_out = vfs_open(con_filename, O_WRONLY, 0644, &sys_filetable.stdout->f_vnode);
     strcpy(con_filename, "con:");
     err_err = vfs_open(con_filename, O_WRONLY, 0644, &sys_filetable.stderr->f_vnode);
-    
+
     if (err_in) {
         return err_in;
     }
@@ -137,26 +137,32 @@ void
 filetable_removefile(struct fs_file *rmfile)
 {
     lock_acquire(sys_filetable.lock);
+
+    /*
+    *  if this is the only file in the filetable and you want to close it,
+    *  then there are no stdin, stdout and stderr open so this is going to trigger
+    *  a panic
+    */
+    KASSERT(!(rmfile->f_prev == NULL && rmfile->f_next == NULL));
+
     /* if prev file is null then this is the tail, so can't edit prev ptr */
     if (rmfile->f_prev != NULL) {
         rmfile->f_prev->f_next = rmfile->f_next;
+    } else {
+        sys_filetable.tail = rmfile->f_next;
+        sys_filetable.tail->f_prev = NULL;
     }
 
     /* if next file is null then this is the head, so can't edit next ptr */
     if (rmfile->f_next != NULL) {
         rmfile->f_next->f_prev = rmfile->f_prev;
+    } else {
+        sys_filetable.head = rmfile->f_prev;
+        sys_filetable.head->f_next = NULL;
     }
 
     sys_filetable.size--;
 
-    /*
-    *  if this is the only file in the filetable, make sys_filetable point to
-    *  NULL so that when you add a new file the sys_filetable pointer is reused
-    */
-    if (rmfile->f_prev == NULL && rmfile->f_next == NULL) {
-        sys_filetable.head = NULL;
-        sys_filetable.tail = NULL;
-    }
     /* finally, deallocate the fs_file structure from kernel space */
     lock_destroy(rmfile->f_lock);
     kfree((void *) rmfile);
@@ -164,7 +170,7 @@ filetable_removefile(struct fs_file *rmfile)
 }
 
 /*
-* Returns the size ofstdin the system file pointer
+* Returns the size of the system file pointer
 */
 size_t
 filetable_size(void)
@@ -190,6 +196,9 @@ filetable_tail(void)
     return sys_filetable.tail;
 }
 
+/*
+* Returns pointer to system filetable lock
+*/
 struct lock *
 filetable_lock(void)
 {
