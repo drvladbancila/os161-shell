@@ -276,19 +276,31 @@ sys___getcwd (char *buf, size_t size, int *retval)
     int error;
     struct uio userio;  
     struct iovec iov;
+    //char *kbuf;
+
+    //kbuf = kstrdup(buf);
 
     userptr_t bufend = (userptr_t) (buf + size);
     if (buf == NULL || (bufend >= (userptr_t) USERSPACETOP)) {
         return EFAULT;
     }
     (void)retval;
-    /*
+    // TODO: usa checkbuffer per fare questo controllo
+
+    /* initialize io vector to point to user buffer and have correct length */
     iov.iov_ubase = (userptr_t) buf;
     iov.iov_len = size;
 
+    /* initialize user io, specifying that the buffer belongs to userspace */
+    userio.uio_iov = &iov;
+    userio.uio_iovcnt = 1;
+    userio.uio_offset = 0;
+    userio.uio_resid = size;
+    userio.uio_segflg = UIO_USERSPACE;
+    userio.uio_rw = UIO_READ;
     userio.uio_space = proc_getas();
-    */
-    uio_kinit(&iov, &userio, buf, size, 0, UIO_READ);
+
+    //uio_kinit(&iov, &userio, kbuf, size, 0, UIO_READ);
 
     //TODO: return errors as described in man
     // TODO: write description of errors as vlad
@@ -320,15 +332,21 @@ int
 sys_chdir(char *pathname, int *retval) 
 {
     int error;
+    char *kpath;
 
     //TODO: return errors as man page
-    error = vfs_chdir(pathname);
+    kpath = kstrdup(pathname);
+    error = vfs_chdir(kpath);
     if (error) {
         *retval = -1;
         kprintf("Error in calling sys_chdir\n");
         return error;
     } else {
         kprintf("CWD changed succesfully\n");
+        // save pathname in the variable of the current process
+        for (size_t i = 0; i < strlen(pathname); i++) {
+            curproc->c_cwd[i] = *(pathname + i);
+        }
         *retval = 0;
     }
 

@@ -54,6 +54,8 @@
 #include <vfs.h>
 #include <emufs.h>
 #include "autoconf.h"
+#include <current.h>
+#include <proc.h>
 
 /* Register offsets */
 #define REG_HANDLE    0
@@ -831,16 +833,22 @@ emufs_namefile(struct vnode *v, struct uio *uio)
 {
 	struct emufs_vnode *ev = v->vn_data;
 	struct emufs_fs *ef = v->vn_fs->fs_data;
-	//char c = 'a';
-	
+	int result;
+
 	if (ev == ef->ef_root) {
 		/*
 		 * Root directory - name is empty string
 		 */
 		return 0;
-	} 
+	} else {
+		result = uiomove((char *)(curproc->c_cwd), strlen(curproc->c_cwd), uio);
+		if (result) {
+			goto out;
+		}
+		return 0;
+	}
 	(void)uio;
-
+out:
 	return ENOSYS;
 }
 

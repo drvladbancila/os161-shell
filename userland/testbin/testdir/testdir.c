@@ -67,7 +67,8 @@ main()
 	} else {
         printf("%s\n", p);
     }
-/*
+
+	// change directory to prova
 	retval = chdir("emu0:/");
 	if (retval == -1) {
 		printf("Chdir failed with errno: %s", strerror(errno));
@@ -81,6 +82,21 @@ main()
 	} else {
         printf("%s\n", p);
     }
-*/
+
+	// change directory to prova
+	retval = chdir("pi/");
+	if (retval == -1) {
+		printf("Chdir failed with errno: %s", strerror(errno));
+	}
+
+	// prints again the cwd 
+	p = getcwd(buf, sizeof(buf));
+	if (p == NULL) {
+		printf("getcwd returned NULL\n");
+		//err(1, ".");
+	} else {
+        printf("%s\n", p);
+    }
+
 	return 0;
 }
