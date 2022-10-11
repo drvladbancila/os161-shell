@@ -831,22 +831,19 @@ emufs_namefile(struct vnode *v, struct uio *uio)
 {
 	struct emufs_vnode *ev = v->vn_data;
 	struct emufs_fs *ef = v->vn_fs->fs_data;
-
+	//char c = 'a';
+	
 	if (ev == ef->ef_root) {
 		/*
 		 * Root directory - name is empty string
 		 */
 		return 0;
-	} else {
-		emufs_read(v, uio);
-		//uiomove(v->vn_fs->fs_data, 3, uio);
-	}
-
+	} 
 	(void)uio;
 
-	return 0;
-	//return ENOSYS;
+	return ENOSYS;
 }
+
 /*
  * VOP_MMAP
  */
