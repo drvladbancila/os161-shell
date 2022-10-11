@@ -104,7 +104,7 @@ proc_create(const char *name)
 
 	/* Exit status initialization */
 	proc->p_exit_status = 0;
-	
+
 	return proc;
 }
 
