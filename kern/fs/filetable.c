@@ -46,27 +46,35 @@ filetable_init(void)
     int err_in, err_out, err_err;
     char con_filename[5];
 
+    /* initialize system filetable lock */
     sys_filetable.lock = lock_create("sys_filetable_lock");
     if (sys_filetable.lock == NULL) {
         return ENOMEM;
     }
 
+    /* create 3 file structs for standard files */
     sys_filetable.stdin = (struct fs_file *) kmalloc(sizeof(struct fs_file));
     sys_filetable.stdout = (struct fs_file *) kmalloc(sizeof(struct fs_file));
     sys_filetable.stderr = (struct fs_file *) kmalloc(sizeof(struct fs_file));
 
+    /* if unable to allocate files */
     if (sys_filetable.stdin == NULL || sys_filetable.stdout == NULL
      || sys_filetable.stderr == NULL) {
         return ENOMEM;
      }
 
+    /*
+     * open standard files attached to "con:", need a strcpy of the const string
+     * because vfs_open destroys the filename
+    */
     strcpy(con_filename, "con:");
     err_in = vfs_open(con_filename, O_RDONLY, 0644, &sys_filetable.stdin->f_vnode);
     strcpy(con_filename, "con:");
     err_out = vfs_open(con_filename, O_WRONLY, 0644, &sys_filetable.stdout->f_vnode);
     strcpy(con_filename, "con:");
     err_err = vfs_open(con_filename, O_WRONLY, 0644, &sys_filetable.stderr->f_vnode);
-    
+
+    /* check for errors during opening */
     if (err_in) {
         return err_in;
     }
@@ -79,6 +87,7 @@ filetable_init(void)
         return err_err;
     }
 
+    /* create a lock for each file */
     sys_filetable.stdin->f_lock = lock_create("stdin");
     sys_filetable.stdout->f_lock = lock_create("stdout");
     sys_filetable.stderr->f_lock = lock_create("stderr");
@@ -88,6 +97,12 @@ filetable_init(void)
         return ENOMEM;
      }
 
+    /* initialize refcount */
+     sys_filetable.stdin->f_refcount = 1;
+     sys_filetable.stdout->f_refcount = 1;
+     sys_filetable.stderr->f_refcount = 1;
+
+    /* set head and tail to stdin, then add two new files (stdout, stderr) */
     sys_filetable.head = sys_filetable.stdin;
     sys_filetable.tail = sys_filetable.head;
     sys_filetable.head->f_next = NULL;
@@ -95,6 +110,7 @@ filetable_init(void)
     filetable_addfile(sys_filetable.stdout);
     filetable_addfile(sys_filetable.stderr);
 
+    /* init system filetable size */
     sys_filetable.size = 3;
 
     return 0;
@@ -103,9 +119,11 @@ filetable_init(void)
 void
 filetable_cleanup(void)
 {
+    /* destroy system filetable lock */
     lock_destroy(sys_filetable.lock);
     struct fs_file *ptr = filetable_head();
 
+    /* remove every node */
     while (ptr->f_prev != NULL) {
         ptr = ptr->f_prev;
         kfree(ptr->f_next);
@@ -137,26 +155,34 @@ void
 filetable_removefile(struct fs_file *rmfile)
 {
     lock_acquire(sys_filetable.lock);
-    /* if prev file is null then this is the tail, so can't edit prev ptr */
+
+    /*
+    *  if this is the only file in the filetable and you want to close it,
+    *  then there are no stdin, stdout and stderr open so this is going to trigger
+    *  a panic
+    */
+    KASSERT(!(rmfile->f_prev == NULL && rmfile->f_next == NULL));
+
+    /* if prev file is not null, we are NOT removing the tail */
     if (rmfile->f_prev != NULL) {
         rmfile->f_prev->f_next = rmfile->f_next;
+    } else {
+        /* we are removing the tail, need to move tail pointer */
+        sys_filetable.tail = rmfile->f_next;
+        sys_filetable.tail->f_prev = NULL;
     }
 
-    /* if next file is null then this is the head, so can't edit next ptr */
+    /* if next file is not null, we are NOT removing the head */
     if (rmfile->f_next != NULL) {
         rmfile->f_next->f_prev = rmfile->f_prev;
+    } else {
+        /* we are removing the head, need to move head pointer */
+        sys_filetable.head = rmfile->f_prev;
+        sys_filetable.head->f_next = NULL;
     }
 
     sys_filetable.size--;
 
-    /*
-    *  if this is the only file in the filetable, make sys_filetable point to
-    *  NULL so that when you add a new file the sys_filetable pointer is reused
-    */
-    if (rmfile->f_prev == NULL && rmfile->f_next == NULL) {
-        sys_filetable.head = NULL;
-        sys_filetable.tail = NULL;
-    }
     /* finally, deallocate the fs_file structure from kernel space */
     lock_destroy(rmfile->f_lock);
     kfree((void *) rmfile);
@@ -164,7 +190,7 @@ filetable_removefile(struct fs_file *rmfile)
 }
 
 /*
-* Returns the size ofstdin the system file pointer
+* Returns the size of the system file pointer
 */
 size_t
 filetable_size(void)
@@ -190,6 +216,9 @@ filetable_tail(void)
     return sys_filetable.tail;
 }
 
+/*
+* Returns pointer to system filetable lock
+*/
 struct lock *
 filetable_lock(void)
 {

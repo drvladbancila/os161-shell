@@ -82,6 +82,9 @@ struct proc {
 	/* Process ID */
 	__pid_t p_id;
 
+	/* Parent process */
+	struct proc *p_parent;
+
 	/* Exit status */
 	int p_exit_status;
 

@@ -109,9 +109,12 @@ proc_create(const char *name)
 		}
 	}
 	
+	/* Parent initialization */
+	proc->p_parent = NULL;
+  
 	/* exit status initialization */
 	proc->p_exit_status = 0;
-	
+
 	return proc;
 }
 

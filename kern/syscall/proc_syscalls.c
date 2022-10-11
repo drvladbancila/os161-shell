@@ -28,16 +28,13 @@
  */
 
 #include <types.h>
-#include <copyinout.h>
 #include <syscall.h>
-#include <vfs.h>
 #include <current.h>
 #include <proc.h>
 #include <limits.h>
-#include <fs.h>
-#include <kern/fcntl.h>
-#include <kern/errno.h>
 #include <addrspace.h>
+#include <kern/errno.h>
+#include <mips/trapframe.h>
 
 /*
 * System call interface function to get the process ID
@@ -49,6 +46,58 @@ sys_getpid(int *retpid)
     *retpid = (int) curproc->p_id;
 
     /* this system call is always successful */
+    return 0;
+}
+
+/*
+* System call interface function to fork a process
+*/
+int
+sys_fork(struct trapframe *tf, int *retval){
+
+    struct trapframe *child_tf;
+    struct proc *child;
+
+    /* copy trap frame from parent */
+    child_tf = (struct trapframe *)kmalloc(sizeof(struct trapframe));
+    *child_tf = *tf;
+
+    /* create child process */
+    child = proc_create_runprogram(curproc->p_name);
+	if (child == NULL) {
+		return ENOMEM;
+	}
+
+    /* set address space */
+    as_copy(curproc->p_addrspace, &child->p_addrspace);
+	if (child->p_addrspace == NULL) {
+		return ENOMEM;
+	}
+
+    /* set file descriptor table */
+    for (unsigned int fd = 0; fd < OPEN_MAX; fd++) {
+		child->p_filetable[fd] = curproc->p_filetable[fd];
+        if(curproc->p_filetable[fd] != NULL){
+            curproc->p_filetable[fd]->f_refcount++;
+        }
+	}
+
+    /* set curproc as parent */
+    child->p_parent = curproc;
+
+    /* create new thread starting from parent */
+    thread_fork(child->p_name, child, enter_forked_process, (void *)child_tf, 1);
+
+
+////////////////////////
+    // TODO : ERRORS to deal with
+    // EMPROC	The current user already has too many processes.
+    // ENPROC	There are already too many processes on the system.
+    // ENOMEM	Sufficient virtual memory for the new process was not available.
+
+    /* parent return child pid */
+    *retval = child->p_id;
+
     return 0;
 }
 
