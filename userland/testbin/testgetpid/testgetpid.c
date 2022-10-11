@@ -28,7 +28,11 @@
  */
 
 /*
+ * testgetpid.c
+ *
  * 	Test program for getpid syscall.
+ *	Usage: testgetpid
+ *
  */
 
 #include <unistd.h>
@@ -39,7 +43,9 @@ int
 main()
 {
     pid_t pid;
+
     pid = getpid();
     printf("Process ID is: %d\n", pid);
+
     return 0;
 }
