@@ -54,18 +54,29 @@ sys_getpid(int *retpid)
 
 /*
 * System call interface function to exit from a process
-* TODO : Still to understand
+* // TODO: Still to understand
 */
 int
 sys__exit(int status)
 {
-    /* Record status */
+    struct proc *alone_proc;
+
+    /* record status */
     curproc->p_exit_status = status;
 
-    /* Release address space */
-    as_destroy(curproc->p_addrspace);
+    /* release address space */
+    //as_destroy(curproc->p_addrspace);
 
-    /* Exit thread */
+    alone_proc = curproc;
+
+    proc_remthread(curthread);
+
+    if(alone_proc->p_numthreads == 0){
+        //viene distrutto solo quando il padre non lo aspetta piu
+        proc_destroy(alone_proc);
+    }
+
+    /* exit thread */
     thread_exit(); 
 
     return 0;

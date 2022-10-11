@@ -13,6 +13,12 @@
         "lib.h": "c",
         "unistd.h": "c",
         "cdefs.h": "c",
-        "trapframe.h": "c"
+        "trapframe.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "types.h": "c",
+        "spinlock.h": "c"
     }
 }
