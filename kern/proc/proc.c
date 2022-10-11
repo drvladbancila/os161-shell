@@ -85,6 +85,11 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
+	/* link stdin, stdout and stderr to file descriptors 0, 1, 2 */
+	proc->p_filetable[STDIN_FILENO] = sys_filetable.stdin;
+	proc->p_filetable[STDOUT_FILENO] = sys_filetable.stdout;
+	proc->p_filetable[STDERR_FILENO] = sys_filetable.stderr;
+
 	/* zero all other entries in file descriptor table */
 	for (fd = STDERR_FILENO + 1; fd < OPEN_MAX; fd++) {
 		proc->p_filetable[fd] = NULL;
