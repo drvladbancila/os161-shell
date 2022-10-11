@@ -35,7 +35,7 @@
 #include <thread.h>
 #include <current.h>
 #include <syscall.h>
-
+#include <addrspace.h>
 
 /*
  * System call dispatcher.
@@ -166,6 +166,10 @@ syscall(struct trapframe *tf)
 		err = sys_getpid(&retval);
 		break;
 
+		case SYS_fork:
+		err = sys_fork(tf, &retval);
+		break;
+
 		case SYS__exit:
 		err = sys__exit((int)tf->tf_a0);
 		break;
@@ -214,7 +218,23 @@ syscall(struct trapframe *tf)
  * Thus, you can trash it and do things another way if you prefer.
  */
 void
-enter_forked_process(struct trapframe *tf)
+enter_forked_process(void *data1, unsigned long data2)
 {
-	(void)tf;
+	struct trapframe *parent_copy_tf = (struct trapframe *) data1;
+	struct trapframe tf;
+	(void) data2;
+
+	/* set child return values */
+	parent_copy_tf->tf_v0 = 0;
+	parent_copy_tf->tf_a3 = 0;
+
+	/* increase child program counter */
+	parent_copy_tf->tf_epc += 4;
+
+	/* activate address space */
+	as_activate();
+
+    /* enter user mode */
+	tf = *parent_copy_tf;
+	mips_usermode(&tf);
 }

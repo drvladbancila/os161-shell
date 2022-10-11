@@ -56,7 +56,7 @@
 # (Compilation.)
 #
 # DEBUG				Compiler option for debug vs. optimize.
-#				Default: -O2
+#				Default: -O0
 #
 # WARNINGS			Compiler options for warnings.
 #				Default: -Wall -Wextra -Wwrite-strings
@@ -313,7 +313,7 @@ PLATFORM=sys161
 MACHINE=mips
 
 # Compilation
-DEBUG=-O2
+DEBUG=-O0
 WARNINGS=-Wall -W -Wwrite-strings -Wmissing-prototypes
 WERROR=-Werror
 

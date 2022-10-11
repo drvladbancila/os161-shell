@@ -13,6 +13,10 @@
         "lib.h": "c",
         "unistd.h": "c",
         "cdefs.h": "c",
-        "trapframe.h": "c"
+        "trapframe.h": "c",
+        "types.h": "c",
+        "copyinout.h": "c",
+        "proc.h": "c",
+        "addrspace.h": "c"
     }
 }

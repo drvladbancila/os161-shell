@@ -28,24 +28,28 @@
  */
 
 /*
- * 	Test program for exit syscall.
+ * 	Test program for fork syscall.
  */
 
 #include <unistd.h>
-#include <stdlib.h>
+#include <sys/types.h>
+#include <errno.h>
 #include <stdio.h>
 
 int
 main()
 {
-    //int answer;
-    //printf("Success (S) or failure (F)?\n");
-    //answer = getchar();
-    //if((char)answer=='S'){
-    //    exit(EXIT_SUCCESS);
-    //}
-    //else if((char)answer=='F'){
-    //    exit(EXIT_FAILURE);
-    //}
-    exit(EXIT_SUCCESS);
+    pid_t pid;
+    pid = fork();
+    if(pid<0){
+        printf("Error: %d\n", errno);
+    }
+    else if(pid==0){
+        printf("I'm the child, my pid is: %d\n", getpid());
+    }
+    else{
+        printf("I'm the parent, my pid is: %d\n", getpid());
+        printf("I'm the parent, my child's pid is: %d\n", pid);
+    }
+    return 0;
 }
