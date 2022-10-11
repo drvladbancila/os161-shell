@@ -28,7 +28,11 @@
  */
 
 /*
+ * testfork.c
+ *
  * 	Test program for fork syscall.
+ *	Usage: testfork
+ *
  */
 
 #include <unistd.h>

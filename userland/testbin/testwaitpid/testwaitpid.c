@@ -28,28 +28,20 @@
  */
 
 /*
- * testexit.c
+ * testwaitpid.c
  *
- * 	Test program for exit syscall.
- *	Usage: testexit
+ * 	Test program for waitpid syscall.
+ *	Usage: testwaitpid
  *
  */
 
 #include <unistd.h>
-#include <stdlib.h>
+#include <sys/types.h>
+#include <errno.h>
 #include <stdio.h>
 
 int
 main()
 {
-    //int answer;
-    //printf("Success (S) or failure (F)?\n");
-    //answer = getchar();
-    //if((char)answer=='S'){
-    //    exit(EXIT_SUCCESS);
-    //}
-    //else if((char)answer=='F'){
-    //    exit(EXIT_FAILURE);
-    //}
-    exit(EXIT_SUCCESS);
+    return 0;
 }

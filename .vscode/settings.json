@@ -17,6 +17,7 @@
         "types.h": "c",
         "copyinout.h": "c",
         "proc.h": "c",
-        "addrspace.h": "c"
+        "addrspace.h": "c",
+        "random": "c"
     }
 }
