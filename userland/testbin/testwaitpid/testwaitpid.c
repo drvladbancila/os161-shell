@@ -37,11 +37,29 @@
 
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <stdio.h>
 
 int
 main()
 {
+    int status;
+    pid_t pid, retVal;
+    pid = fork();
+    if(pid<0){
+        printf("Error: %d\n", errno);
+    }
+    else if(pid==0){
+        printf("I'm the child, my pid is: %d\n", getpid());
+    }
+    else{
+        printf("Hello!\n");
+        retVal = waitpid(pid, &status, 0);
+        printf("I'm the parent, my pid is: %d\n", getpid());
+        printf("I'm the parent, my child's pid is: %d\n", pid);
+        printf("I'm the parent, my child has returned: %d\n", status);
+        printf("I'm the parent, waitpid has returned: %d\n", retVal);
+    }
     return 0;
 }

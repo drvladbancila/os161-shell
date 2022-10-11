@@ -35,6 +35,7 @@
 #include <addrspace.h>
 #include <kern/errno.h>
 #include <mips/trapframe.h>
+#include <synch.h>
 
 /*
 * System call interface function to get the process ID
@@ -120,6 +121,9 @@ sys__exit(int status)
 
     proc_remthread(curthread);
 
+    /* release the lock */
+    lock_release(curproc->p_lock_active);
+
     if(alone_proc->p_numthreads == 0){
         //viene distrutto solo quando il padre non lo aspetta piu
         proc_destroy(alone_proc);
@@ -127,6 +131,59 @@ sys__exit(int status)
 
     /* exit thread */
     thread_exit(); 
+
+    return 0;
+}
+
+/*
+* System call interface function to wait for a process to terminate given its identifier
+*/
+int 
+sys_waitpid(__pid_t pid, int *status, int options, int *retval)
+{
+    struct proc *searchproc = proc_head;
+    struct proc *foundproc = NULL;
+
+    /* currently no options are supported */
+    if(options != 0){
+        return EINVAL;
+    }
+
+    /* check if pid argument is the identifier of an existing process*/
+    while(searchproc != NULL){
+        if(searchproc->p_id == pid){
+            foundproc = searchproc;
+            searchproc = NULL;
+        }
+        else{
+            searchproc = searchproc->p_prevproc;
+        }
+    }
+    if(foundproc == NULL){
+        return ESRCH;
+    }
+
+    /* check if pid argument is the identifier of a child process*/
+    if(foundproc->p_parent != curproc){
+        return ECHILD;
+    }
+    
+    /* check if status argument is a valid pointer */
+    if (status >= (int *) USERSPACETOP) {
+		return EFAULT;
+	}
+
+    /* acquire the child lock */
+    lock_acquire(foundproc->p_lock_active);
+
+    /* save child process exit status */
+    *status = foundproc->p_exit_status;
+
+    /* release the child lock */
+    lock_release(foundproc->p_lock_active);
+
+    /* on success, the child pid is the return value */
+    *retval = (int) pid;
 
     return 0;
 }

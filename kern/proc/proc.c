@@ -55,6 +55,9 @@
  */
 struct proc *kproc;
 
+/* Process list head */
+struct proc *proc_head = NULL;
+
 /*
  * Create a proc structure.
  */
@@ -109,11 +112,23 @@ proc_create(const char *name)
 		}
 	}
 	
-	/* Parent initialization */
+	/* parent initialization */
 	proc->p_parent = NULL;
   
+  	/* add an element to the process list */
+	proc->p_prevproc = proc_head;
+	proc->p_nextproc = NULL;
+	if(proc->p_prevproc != NULL){
+		proc->p_prevproc->p_nextproc = proc;
+	}
+	proc_head = proc;
+
 	/* exit status initialization */
 	proc->p_exit_status = 0;
+
+	/* create the lock and acquire it */
+	proc->p_lock_active = lock_create(name);
+	lock_acquire(proc->p_lock_active);
 
 	return proc;
 }
@@ -201,12 +216,30 @@ proc_destroy(struct proc *proc)
 	KASSERT(proc->p_numthreads == 0);
 	spinlock_cleanup(&proc->p_lock);
 
-	/* the PID can be used by other processes */
-	proc_freelist_push(&proc->p_id);
-	//err_push = proc_freelist_push(&proc->p_id);
-	//if(err_push){
-		//return
-	//}
+	/* release the PID */
+	int err_push = proc_freelist_push(&proc->p_id);
+	if(err_push){
+		panic("can't push a new element into the pid freelist");
+	}
+
+  	/* remove an element from the process list */ 
+	if(proc->p_prevproc == NULL){ // TODO compara con Vlad
+		proc->p_nextproc->p_prevproc = NULL;
+	}
+	else if(proc->p_nextproc == NULL){
+		proc->p_prevproc->p_nextproc = NULL;
+	}
+	else{
+		proc->p_nextproc->p_prevproc = proc->p_prevproc;
+		proc->p_prevproc->p_nextproc = proc->p_nextproc;
+	}
+
+	/* acquire the lock */
+	lock_acquire(proc->p_lock_active); // TODO potrebbe piantasi se il lock è gia acquisito e qualcuno chiama sta funzione
+
+	/* release the lock and destroy it */ // TODO lock with more thread??
+	lock_release(proc->p_lock_active);		// TODO 2 are we sure that the sys_waitpid acquire the lock before us?
+	lock_destroy(proc->p_lock_active);
 
 	kfree(proc->p_name);
 	kfree(proc);
