@@ -97,6 +97,14 @@ runprogram(char *progname)
 		return result;
 	}
 
+	/*
+	* increase the refcount for the stdfiles so that they always have >= 1
+	* refcount and they are not deleted from the sys filetable
+	*/
+	curproc->p_filetable[STDIN_FILENO]->f_refcount++;
+	curproc->p_filetable[STDOUT_FILENO]->f_refcount++;
+	curproc->p_filetable[STDERR_FILENO]->f_refcount++;
+
 	/* Warp to user mode. */
 	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
 			  NULL /*userspace addr of environment*/,
