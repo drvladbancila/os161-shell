@@ -35,6 +35,9 @@
 #include <addrspace.h>
 #include <kern/errno.h>
 #include <mips/trapframe.h>
+#include <copyinout.h>
+
+static const char *arg_padding[4] = {"\0", "\0\0", "\0\0\0", "\0\0\0\0"};
 
 /*
 * System call interface function to get the process ID
@@ -101,6 +104,79 @@ sys_fork(struct trapframe *tf, int *retval){
     return 0;
 }
 
+int
+sys_execv(userptr_t prog, userptr_t args)
+{
+    char *kprogname;
+    char *kargv[10];
+    char **argv = (char **) args;
+
+    int result;
+    int i = 0;
+    int argc = 0;
+    struct vnode *v;
+    struct addrspace *as;
+    vaddr_t entrypoint, stackptr;
+
+    /* copy program name into kernel space */
+    kprogname = kstrdup((char *) prog);
+
+    (void) arg_padding;
+
+    /* copy arguments into kernel space */
+
+    /* count number of arguments */
+    while ((argv+argc) != NULL){
+        argc++;
+    }
+
+    for (i = 0; i < argc; i++) {
+        kargv[i] = kstrdup(*(argv+argc));
+    }
+
+    (void) kargv;
+
+    /* open ELF file */
+    result = vfs_open(kprogname, O_RDONLY, 0, &v);
+    if (result) {
+        return result;
+    }
+
+    /* create a new address space */
+    as = as_create();
+	if (as == NULL) {
+		vfs_close(v);
+		return ENOMEM;
+	}
+
+    /* switch to new address space */
+    proc_setas(as);
+	as_activate();
+
+    /* load the ELF into memory and get pointer to entry point */
+    result = load_elf(v, &entrypoint);
+    if (result) {
+        vfs_close(v);
+        return result;
+    }
+
+    /* close ELF file */
+    vfs_close(v);
+
+    /* define user stack in the new address space, simply assigns stackptr to 0x80000000 */
+    result = as_define_stack(as, &stackptr);
+    if (result) {
+        return result;
+    }
+
+    // TODO copy arguments to user stack
+
+    /* switch to user mode */
+    enter_new_process(argc, argv, NULL, stackptr, entrypoint);
+    panic("enter_new_process returned in execv\n");
+    return EINVAL;
+}
+
 /*
 * System call interface function to exit from a process
 * TODO: Still to understand
@@ -115,7 +191,7 @@ sys__exit(int status)
     as_destroy(curproc->p_addrspace);
 
     /* Exit thread */
-    thread_exit(); 
+    thread_exit();
 
     return 0;
 }
