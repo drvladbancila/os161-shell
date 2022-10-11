@@ -841,6 +841,7 @@ emufs_namefile(struct vnode *v, struct uio *uio)
 		 */
 		return 0;
 	} else {
+		// not Root directory: add the char array of cwd to uio
 		result = uiomove((char *)(curproc->c_cwd), strlen(curproc->c_cwd), uio);
 		if (result) {
 			goto out;

@@ -43,18 +43,18 @@ main()
 {
 	char buf[PATH_MAX+1], *p;
 	int retval;
+	int fd;
 
 	// print current working directory (root)
 	p = getcwd(buf, sizeof(buf));
 	if (p == NULL) {
 		printf("getcwd returned NULL\n");
-		//err(1, ".");
 	} else {
         printf("%s\n", p);
     }
 
 	// change directory to prova
-	retval = chdir("emu0:/pi/");
+	retval = chdir("emu0:/prova/");
 	if (retval == -1) {
 		printf("Chdir failed with errno: %s", strerror(errno));
 	}
@@ -63,13 +63,12 @@ main()
 	p = getcwd(buf, sizeof(buf));
 	if (p == NULL) {
 		printf("getcwd returned NULL\n");
-		//err(1, ".");
 	} else {
         printf("%s\n", p);
     }
 
 	// change directory to prova
-	retval = chdir("emu0:/");
+	retval = chdir("paolo");
 	if (retval == -1) {
 		printf("Chdir failed with errno: %s", strerror(errno));
 	}
@@ -78,22 +77,23 @@ main()
 	p = getcwd(buf, sizeof(buf));
 	if (p == NULL) {
 		printf("getcwd returned NULL\n");
-		//err(1, ".");
 	} else {
         printf("%s\n", p);
     }
 
 	// change directory to prova
-	retval = chdir("pi/");
+	retval = chdir("..");
 	if (retval == -1) {
 		printf("Chdir failed with errno: %s", strerror(errno));
 	}
+
+    fd = open("hello.txt", O_CREAT);
+    close(fd);
 
 	// prints again the cwd 
 	p = getcwd(buf, sizeof(buf));
 	if (p == NULL) {
 		printf("getcwd returned NULL\n");
-		//err(1, ".");
 	} else {
         printf("%s\n", p);
     }

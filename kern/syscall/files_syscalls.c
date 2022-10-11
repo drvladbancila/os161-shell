@@ -45,6 +45,7 @@
 #include <vnode.h>
 #include <kern/errno.h>
 #include <vm.h>
+#include <lib.h>
 
 /*
 * System call interface function for opening files
@@ -307,18 +308,18 @@ sys___getcwd (char *buf, size_t size, int *retval)
     error = vfs_getcwd(&userio);
 
     if (error) {
-        kprintf("vfs_getcwd failed (%s)\n", strerror(error));
+        kprintf("Kernel: vfs_getcwd failed (%s)\n", strerror(error));
         *retval = -1;
         return error;
     } else {
-        kprintf("Working directory: ");
-        kprintf("%s\n", buf);
-
         //null termination
         buf[size - userio.uio_resid] = 0;
 
         //return the length of returned data
         *retval = size - userio.uio_resid;
+
+        kprintf("Kernel: Working directory: ");
+        kprintf("%s\n", buf);
     }
 
     //TODO: return size, not buffer
@@ -331,7 +332,7 @@ sys___getcwd (char *buf, size_t size, int *retval)
 int 
 sys_chdir(char *pathname, int *retval) 
 {
-    int error;
+    int error, ret;
     char *kpath;
 
     //TODO: return errors as man page
@@ -339,14 +340,21 @@ sys_chdir(char *pathname, int *retval)
     error = vfs_chdir(kpath);
     if (error) {
         *retval = -1;
-        kprintf("Error in calling sys_chdir\n");
+        kprintf("Kernel: Error in calling sys_chdir\n");
         return error;
     } else {
-        kprintf("CWD changed succesfully\n");
+        kprintf("Kernel: CWD changed succesfully\n");
         // save pathname in the variable of the current process
-        for (size_t i = 0; i < strlen(pathname); i++) {
-            curproc->c_cwd[i] = *(pathname + i);
+        ret = remove_device_from_path(pathname, strlen(pathname));
+
+        if (ret == 1) { // absolute path, overwrite in c_cwd
+            for (size_t i = 0; i < strlen(pathname); i++) {
+                curproc->c_cwd[i] = *(pathname + i);
+            } 
+        } else { // relative path, concatenate 
+            strcat(curproc->c_cwd, pathname);
         }
+
         *retval = 0;
     }
 

@@ -60,3 +60,35 @@ strerror(int errcode)
 	panic("Invalid error code %d\n", errcode);
 	return NULL;
 }
+
+/* remove the device identifier from the beginning of the path.
+ * returns -1 if it was an absolute path, 0 if it was relative, n if contains n times ".."
+ * complete with "/" at the end if not present
+ */
+int 
+remove_device_from_path(char *original, size_t size) {
+	size_t i = 0;
+	int retval;
+
+	// look for the position of the ":"
+	while (*(original + i) != ':' && i < size)
+		i++;
+
+	// if the ":" is present
+	if (i < size) {
+		for (size_t j = 0; j < size - i; j++) {
+			*(original + j) = *(original + j + i + 1);
+		}
+		size = size - i;
+		retval = 1;
+	} else {
+		retval = 0;
+	}
+	if (original[size - 1] != '/') {
+		original[size] = '/';
+		size++;
+	}
+
+	original[size] = 0;
+	return retval;
+}
