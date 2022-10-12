@@ -54,7 +54,7 @@ main()
     }
 
 	// change directory to prova
-	retval = chdir("emu0:/prova/");
+	retval = chdir("emu0:/prova/paolo");
 	if (retval == -1) {
 		printf("Chdir failed with errno: %s", strerror(errno));
 	}
@@ -68,7 +68,7 @@ main()
     }
 
 	// change directory to prova
-	retval = chdir("paolo");
+	retval = chdir("../..");
 	if (retval == -1) {
 		printf("Chdir failed with errno: %s", strerror(errno));
 	}
@@ -82,7 +82,7 @@ main()
     }
 
 	// change directory to prova
-	retval = chdir("..");
+	retval = chdir("emu0:/prova/paolo");
 	if (retval == -1) {
 		printf("Chdir failed with errno: %s", strerror(errno));
 	}
@@ -90,6 +90,12 @@ main()
     fd = open("hello.txt", O_CREAT);
     close(fd);
 
+	// change directory to prova
+	retval = chdir("emu0:");
+	if (retval == -1) {
+		printf("Chdir failed with errno: %s", strerror(errno));
+	}
+
 	// prints again the cwd 
 	p = getcwd(buf, sizeof(buf));
 	if (p == NULL) {
@@ -97,6 +103,16 @@ main()
 	} else {
         printf("%s\n", p);
     }
+
+	retval = chdir(" ");
+	if (retval == -1) {
+		printf("Chdir failed with errno: %s\n", strerror(errno));
+	}
+
+	retval = chdir("pippo");
+	if (retval == -1) {
+		printf("Chdir failed with errno: %s\n", strerror(errno));
+	}
 
 	return 0;
 }

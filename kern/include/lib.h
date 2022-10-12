@@ -187,7 +187,7 @@ void kgets(char *buf, size_t maxbuflen);
 
 void kprintf_bootstrap(void);
 
-int remove_device_from_path(char *, size_t);
+void set_cwd_from_path(char *, char *, size_t);
 
 /*
  * Other miscellaneous stuff

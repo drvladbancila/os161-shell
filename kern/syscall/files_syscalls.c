@@ -301,14 +301,15 @@ sys___getcwd (char *buf, size_t size, int *retval)
     userio.uio_rw = UIO_READ;
     userio.uio_space = proc_getas();
 
-    //uio_kinit(&iov, &userio, kbuf, size, 0, UIO_READ);
-
-    //TODO: return errors as described in man
-    // TODO: write description of errors as vlad
+    /*
+    *  errors during the getcwd operation
+    *  error = 0 : no errors during VOP_WRITE
+    *  error = EIO : I/O errors during VOP_WRITE
+    *  error = ENOENT	: a component of the pathname no longer exists.
+    */
     error = vfs_getcwd(&userio);
 
     if (error) {
-        kprintf("Kernel: vfs_getcwd failed (%s)\n", strerror(error));
         *retval = -1;
         return error;
     } else {
@@ -317,12 +318,7 @@ sys___getcwd (char *buf, size_t size, int *retval)
 
         //return the length of returned data
         *retval = size - userio.uio_resid;
-
-        kprintf("Kernel: Working directory: ");
-        kprintf("%s\n", buf);
     }
-
-    //TODO: return size, not buffer
 
     return 0;
 }
@@ -332,29 +328,27 @@ sys___getcwd (char *buf, size_t size, int *retval)
 int 
 sys_chdir(char *pathname, int *retval) 
 {
-    int error, ret;
+    int error;
     char *kpath;
 
     //TODO: return errors as man page
     kpath = kstrdup(pathname);
     error = vfs_chdir(kpath);
+    /*
+    *  errors during the chdir operation
+    *  err = 0 : no errors during VOP_WRITE
+    *  err = EIO : I/O errors during VOP_WRITE
+    *  err = ENODEV	: The device prefix of pathname did not exist 1
+    *  err = ENOTDIR : pathname did not refer to a directory  1
+    *  err = ENOENT : pathname did not exist   1
+    *  err = EFAULT	: pathname was an invalid pointer
+    */
     if (error) {
         *retval = -1;
-        kprintf("Kernel: Error in calling sys_chdir\n");
         return error;
     } else {
-        kprintf("Kernel: CWD changed succesfully\n");
         // save pathname in the variable of the current process
-        ret = remove_device_from_path(pathname, strlen(pathname));
-
-        if (ret == 1) { // absolute path, overwrite in c_cwd
-            for (size_t i = 0; i < strlen(pathname); i++) {
-                curproc->c_cwd[i] = *(pathname + i);
-            } 
-        } else { // relative path, concatenate 
-            strcat(curproc->c_cwd, pathname);
-        }
-
+        set_cwd_from_path(curproc->c_cwd, pathname, strlen(pathname));
         *retval = 0;
     }
 
