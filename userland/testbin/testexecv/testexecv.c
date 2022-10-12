@@ -52,12 +52,10 @@ main()
         return -1;
     } else if (pid == 0) {
         argv[1] = (char *) "child_write.txt";
-        printf("I am child process calling testwrite...\n");
+        printf("I am child process with pid %d calling testwrite...\n", getpid());
         execv("/testbin/testwrite", argv);
     } else {
-        printf("I am parent process calling testwrite...\n");
-        argv[1] = (char *) "parent_write.txt";
-        execv("/testbin/testwrite", argv);
+        printf("I am parent process with pid %d\n", getpid());
     }
 
     return 0;
