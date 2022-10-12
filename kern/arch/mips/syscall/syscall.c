@@ -36,6 +36,8 @@
 #include <current.h>
 #include <syscall.h>
 #include <addrspace.h>
+#include <synch.h>
+#include <proc.h>
 
 /*
  * System call dispatcher.
@@ -240,6 +242,9 @@ enter_forked_process(void *data1, unsigned long data2)
 
 	/* activate address space */
 	as_activate();
+
+	/* acquire active lock */
+	lock_acquire(curproc->p_lock_active);
 
     /* enter user mode */
 	tf = *parent_copy_tf;

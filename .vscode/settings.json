@@ -18,6 +18,7 @@
         "copyinout.h": "c",
         "proc.h": "c",
         "addrspace.h": "c",
-        "random": "c"
+        "random": "c",
+        "cstdlib": "c"
     }
 }

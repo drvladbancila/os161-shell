@@ -126,9 +126,9 @@ proc_create(const char *name)
 	/* exit status initialization */
 	proc->p_exit_status = 0;
 
-	/* create the lock and acquire it */
-	proc->p_lock_active = lock_create(name);
-	lock_acquire(proc->p_lock_active);
+	/* create the locks */
+	proc->p_lock_active = lock_create(proc->p_name);
+	proc->p_lock_wait = lock_create(proc->p_name);
 
 	return proc;
 }
@@ -234,12 +234,9 @@ proc_destroy(struct proc *proc)
 		proc->p_prevproc->p_nextproc = proc->p_nextproc;
 	}
 
-	/* acquire the lock */
-	lock_acquire(proc->p_lock_active); // TODO potrebbe piantasi se il lock è gia acquisito e qualcuno chiama sta funzione
-
-	/* release the lock and destroy it */ // TODO lock with more thread??
-	lock_release(proc->p_lock_active);		// TODO 2 are we sure that the sys_waitpid acquire the lock before us?
+	/* destroy the locks */
 	lock_destroy(proc->p_lock_active);
+	lock_destroy(proc->p_lock_wait);
 
 	kfree(proc->p_name);
 	kfree(proc);

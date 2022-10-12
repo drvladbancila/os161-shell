@@ -40,6 +40,7 @@
 #include <sys/wait.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int
 main()
@@ -49,17 +50,19 @@ main()
     pid = fork();
     if(pid<0){
         printf("Error: %d\n", errno);
+        exit(EXIT_FAILURE);
     }
     else if(pid==0){
         printf("I'm the child, my pid is: %d\n", getpid());
+        exit(EXIT_FAILURE);
     }
     else{
-        printf("Hello!\n");
+        printf("Hello\n");
         retVal = waitpid(pid, &status, 0);
         printf("I'm the parent, my pid is: %d\n", getpid());
         printf("I'm the parent, my child's pid is: %d\n", pid);
         printf("I'm the parent, my child has returned: %d\n", status);
         printf("I'm the parent, waitpid has returned: %d\n", retVal);
+        exit(EXIT_SUCCESS);
     }
-    return 0;
 }

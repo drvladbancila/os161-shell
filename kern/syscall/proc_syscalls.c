@@ -119,13 +119,16 @@ sys__exit(int status)
 
     alone_proc = curproc;
 
-    proc_remthread(curthread);
+    
 
-    /* release the lock */
-    lock_release(curproc->p_lock_active);
-
-    if(alone_proc->p_numthreads == 0){
-        //viene distrutto solo quando il padre non lo aspetta piu
+    if(alone_proc->p_numthreads == 1){
+        /* release the lock */
+        lock_release(curproc->p_lock_active);
+	    /* acquire wait lock (useful in case of parent waitpid syscall) */
+	    lock_acquire(curproc->p_lock_wait);
+	    /* release wait lock */
+	    lock_release(curproc->p_lock_wait);
+        proc_remthread(curthread);
         proc_destroy(alone_proc);
     }
 
@@ -173,13 +176,15 @@ sys_waitpid(__pid_t pid, int *status, int options, int *retval)
 		return EFAULT;
 	}
 
-    /* acquire the child lock */
+    /* acquire child locks */
+    lock_acquire(foundproc->p_lock_wait);
     lock_acquire(foundproc->p_lock_active);
 
     /* save child process exit status */
     *status = foundproc->p_exit_status;
 
-    /* release the child lock */
+    /* release child locks */
+    lock_release(foundproc->p_lock_wait);
     lock_release(foundproc->p_lock_active);
 
     /* on success, the child pid is the return value */

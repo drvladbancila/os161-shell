@@ -94,6 +94,7 @@ struct proc {
 
 	/* Lock for an active process */
 	struct lock *p_lock_active;
+	struct lock *p_lock_wait;
 };
 
 /* Process list head */
