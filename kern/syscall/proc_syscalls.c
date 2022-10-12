@@ -253,6 +253,9 @@ sys_execv(userptr_t prog, userptr_t args)
 
     /* now we can copy everything brutally as the references will be correct! */
     copyout(kbuf, (userptr_t) stackptr_argv, kbuf_size);
+    /* free the memory allocated in the kernel heap */
+    kfree(kbuf);
+    kfree(kprogname);
 
     /* switch to user mode */
     enter_new_process(argc, (userptr_t) stackptr_argv, NULL, stackptr_argv, entrypoint);
