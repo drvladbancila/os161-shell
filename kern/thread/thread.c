@@ -762,6 +762,9 @@ thread_startup(void (*entrypoint)(void *data1, unsigned long data2),
 	/* Call the function. */
 	entrypoint(data1, data2);
 
+	/* Detach from our process. */
+	proc_remthread(cur);
+
 	/* Done. */
 	thread_exit();
 }
@@ -785,6 +788,7 @@ thread_exit(void)
 	/*
 	 * Detach from our process. You might need to move this action
 	 * around, depending on how your wait/exit works.
+	 * Note: moved to sys__exit and thread_startup
 	 */
 	//proc_remthread(cur);
 

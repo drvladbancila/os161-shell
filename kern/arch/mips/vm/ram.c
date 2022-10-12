@@ -60,7 +60,7 @@ ram_bootstrap(void)
 	if (ramsize > 512*1024*1024) {
 		ramsize = 512*1024*1024;
 	}
-	ramsize = 1024*1024*1024;
+
 	lastpaddr = ramsize;
 
 	/*

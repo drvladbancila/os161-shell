@@ -34,6 +34,7 @@
 #include <limits.h>
 #include <addrspace.h>
 #include <kern/errno.h>
+#include <kern/wait.h>
 #include <mips/trapframe.h>
 #include <synch.h>
 
@@ -104,7 +105,6 @@ sys_fork(struct trapframe *tf, int *retval){
 
 /*
 * System call interface function to exit from a process
-* // TODO: Still to understand
 */
 int
 sys__exit(int status)
@@ -114,12 +114,8 @@ sys__exit(int status)
     /* record status */
     curproc->p_exit_status = status;
 
-    /* release address space */
-    //as_destroy(curproc->p_addrspace);
-
+    /* save pointer to the current process */
     alone_proc = curproc;
-
-    
 
     if(alone_proc->p_numthreads == 1){
         /* release the lock */
@@ -181,7 +177,7 @@ sys_waitpid(__pid_t pid, int *status, int options, int *retval)
     lock_acquire(foundproc->p_lock_active);
 
     /* save child process exit status */
-    *status = foundproc->p_exit_status;
+    *status = _MKWAIT_EXIT(foundproc->p_exit_status);
 
     /* release child locks */
     lock_release(foundproc->p_lock_wait);

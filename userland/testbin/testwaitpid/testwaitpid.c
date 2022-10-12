@@ -45,7 +45,7 @@
 int
 main()
 {
-    int status;
+    int status, child_test_status = 5;
     pid_t pid, retVal;
     pid = fork();
     if(pid<0){
@@ -54,14 +54,14 @@ main()
     }
     else if(pid==0){
         printf("I'm the child, my pid is: %d\n", getpid());
-        exit(EXIT_FAILURE);
+        exit(child_test_status);
     }
     else{
         printf("Hello\n");
         retVal = waitpid(pid, &status, 0);
         printf("I'm the parent, my pid is: %d\n", getpid());
         printf("I'm the parent, my child's pid is: %d\n", pid);
-        printf("I'm the parent, my child has returned: %d\n", status);
+        printf("I'm the parent, my child has returned: %d\n", WEXITSTATUS(status));
         printf("I'm the parent, waitpid has returned: %d\n", retVal);
         exit(EXIT_SUCCESS);
     }

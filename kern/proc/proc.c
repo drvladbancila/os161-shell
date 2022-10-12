@@ -223,13 +223,13 @@ proc_destroy(struct proc *proc)
 	}
 
   	/* remove an element from the process list */ 
-	if(proc->p_prevproc == NULL){ // TODO compara con Vlad
+	if(proc->p_prevproc == NULL){	/* removing the tail */ 
 		proc->p_nextproc->p_prevproc = NULL;
 	}
-	else if(proc->p_nextproc == NULL){
+	else if(proc->p_nextproc == NULL){	/* removing the head */ 
 		proc->p_prevproc->p_nextproc = NULL;
 	}
-	else{
+	else{	/* removing a middle node */ 
 		proc->p_nextproc->p_prevproc = proc->p_prevproc;
 		proc->p_prevproc->p_nextproc = proc->p_nextproc;
 	}
