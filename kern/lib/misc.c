@@ -99,10 +99,10 @@ set_cwd_from_path(char * cwd, char *original, size_t size) {
 					}
 				}
 			} else {
+				strcat(cwd, "/");
 				strcat(cwd, field);
 			}
 			field = strtok_r(NULL, "/", &saveptr);
 		}
-
 	}
 }

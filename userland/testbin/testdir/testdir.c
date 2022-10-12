@@ -82,13 +82,21 @@ main()
     }
 
 	// change directory to prova
-	retval = chdir("emu0:/prova/paolo");
+	retval = chdir("/prova/paolo");
 	if (retval == -1) {
 		printf("Chdir failed with errno: %s", strerror(errno));
 	}
 
     fd = open("hello.txt", O_CREAT);
     close(fd);
+
+	// prints again the cwd 
+	p = getcwd(buf, sizeof(buf));
+	if (p == NULL) {
+		printf("getcwd returned NULL\n");
+	} else {
+        printf("%s\n", p);
+    }
 
 	// change directory to prova
 	retval = chdir("emu0:");
