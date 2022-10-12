@@ -39,22 +39,26 @@
 int
 main()
 {
-    pid_t pid;
-    pid = fork();
-    char *argv[2];
-	argv[0] = (char *) "hello";
-	argv[1] = NULL;
+    char *argv[3];
+    int pid;
+	argv[0] = (char *) "testwrite";
+    argv[1] = (char *) "child_.txt";
+	argv[2] = NULL;
 
-    if(pid<0){
-        printf("Error: %d\n", errno);
+    pid = fork();
+
+    if (pid < 0) {
+        printf("Could not create child process\n");
+        return -1;
+    } else if (pid == 0) {
+        argv[1] = (char *) "child_write.txt";
+        printf("I am child process calling testwrite...\n");
+        execv("/testbin/testwrite", argv);
+    } else {
+        printf("I am parent process calling testwrite...\n");
+        argv[1] = (char *) "parent_write.txt";
+        execv("/testbin/testwrite", argv);
     }
-    else if(pid==0){
-        printf("I'm the child, my pid is: %d\n", getpid());
-        execv("/bin/echo", argv);
-    }
-    else{
-        printf("I'm the parent, my pid is: %d\n", getpid());
-        printf("I'm the parent, my child's pid is: %d\n", pid);
-    }
+
     return 0;
 }
