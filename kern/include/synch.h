@@ -36,6 +36,7 @@
 
 
 #include <spinlock.h>
+#include <thread.h>
 
 /*
  * Dijkstra-style semaphore.
@@ -85,6 +86,7 @@ struct lock {
 
 struct lock *lock_create(const char *name);
 void lock_destroy(struct lock *);
+void lock_init(struct lock *lock, struct thread *newthread);
 
 /*
  * Operations:
