@@ -65,6 +65,7 @@ int sys_lseek(int fd, __off_t pos, int whence, int *retval);
 int sys_dup2(int oldfd, int newfd, int *retval);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 int sys_getpid(int *retpid);
+int sys_getppid(int *retpid);
 int sys_fork(struct trapframe *tf, int *retval);
 int sys_execv(userptr_t progname, userptr_t args);
 int sys__exit(int status);
