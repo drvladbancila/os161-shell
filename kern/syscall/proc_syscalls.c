@@ -142,9 +142,10 @@ sys_waitpid(__pid_t pid, int *status, int options, int *retval)
 {
     struct proc *searchproc = proc_head;
     struct proc *foundproc = NULL;
+    int tryval;
 
     /* currently no options are supported */
-    if(options != 0){
+    if(options != 0 && options != WNOHANG){
         return EINVAL;
     }
 
@@ -174,7 +175,16 @@ sys_waitpid(__pid_t pid, int *status, int options, int *retval)
 
     /* acquire child locks */
     lock_acquire(foundproc->p_lock_wait);
-    lock_acquire(foundproc->p_lock_active);
+    if(options == WNOHANG){
+        tryval = lock_tryacquire(foundproc->p_lock_active);
+        if(tryval){
+            *retval = 0;
+            return 0;
+        }
+    }
+    else{
+        lock_acquire(foundproc->p_lock_active);
+    }
 
     /* save child process exit status */
     *status = _MKWAIT_EXIT(foundproc->p_exit_status);

@@ -88,16 +88,19 @@ void lock_destroy(struct lock *);
 
 /*
  * Operations:
- *    lock_acquire - Get the lock. Only one thread can hold the lock at the
- *                   same time.
- *    lock_release - Free the lock. Only the thread holding the lock may do
- *                   this.
- *    lock_do_i_hold - Return true if the current thread holds the lock;
- *                   false otherwise.
+ *    lock_acquire    - Get the lock. Only one thread can hold the lock at the
+ *                      same time.
+ *    lock_tryacquire - Try to get the lock. If a thread is already holding it
+ *                      nothing happens.
+ *    lock_release    - Free the lock. Only the thread holding the lock may do
+ *                      this.
+ *    lock_do_i_hold  - Return true if the current thread holds the lock;
+ *                      false otherwise.
  *
  * These operations must be atomic. You get to write them.
  */
 void lock_acquire(struct lock *);
+int lock_tryacquire(struct lock *);
 void lock_release(struct lock *);
 bool lock_do_i_hold(struct lock *);
 

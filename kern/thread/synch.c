@@ -197,7 +197,7 @@ lock_acquire(struct lock *lock)
         // Write this
         /* if you can acquire the spinlock (no one else is doing anything with this lock) */
         spinlock_acquire(&lock->lk_lock);
-        /* check is value, and if the lock is taken then put this thread to sleep */
+        /* check its value, and if the lock is taken then put this thread to sleep */
         while (lock->lk_value == true) {
                 wchan_sleep(lock->lk_wchan, &lock->lk_lock);
         }
@@ -209,6 +209,33 @@ lock_acquire(struct lock *lock)
 
 	/* Call this (atomically) once the lock is acquired */
 	HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
+}
+
+int
+lock_tryacquire(struct lock *lock)
+{
+        int retval = 1;
+
+	/* Call this (atomically) before waiting for a lock */
+	HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
+
+        // Write this
+        /* if you can acquire the spinlock (no one else is doing anything with this lock) */
+        spinlock_acquire(&lock->lk_lock);
+        /* check its value, and if the lock is taken, do nothing */
+        if (lock->lk_value == false) {
+                /* if the lock was free, then take it immediately and set ownership */
+                lock->lk_value = true;
+                lock->lk_owner = curthread;
+                retval = 0;
+        }
+        /* release the spinlock */
+        spinlock_release(&lock->lk_lock);
+
+	/* Call this (atomically) once the lock is acquired */
+	HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
+
+        return retval;
 }
 
 void
