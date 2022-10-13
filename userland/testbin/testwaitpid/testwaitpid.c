@@ -39,6 +39,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -49,7 +50,7 @@ main()
     pid_t pid, retVal;
     pid = fork();
     if(pid<0){
-        printf("Error: %d\n", errno);
+        printf("Error: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
     else if(pid==0){

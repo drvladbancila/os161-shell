@@ -58,6 +58,9 @@ struct proc *kproc;
 /* Process list head */
 struct proc *proc_head = NULL;
 
+/* PID counter */
+__pid_t count_pid = PID_MIN - 1;
+
 /*
  * Create a proc structure.
  */
@@ -67,7 +70,6 @@ proc_create(const char *name)
 {
 	struct proc *proc;
 	unsigned int fd;
-	static __pid_t count_pid = PID_MIN-1;
 	int err_pop;
 
 	proc = kmalloc(sizeof(*proc));
@@ -100,21 +102,22 @@ proc_create(const char *name)
 	}
 
 	/* process ID assignment */
-	if(count_pid <= PID_MAX){
-		proc->p_id = count_pid;
-		count_pid++;
-	}
-	else{
-		err_pop = proc_freelist_pop(&proc->p_id);
-		if(err_pop){
+	err_pop = proc_freelist_pop(&proc->p_id);
+	if(err_pop) {
+		if(count_pid <= PID_MAX){
+			proc->p_id = count_pid;
+			count_pid++;
+		}
+		else {
 			kfree(proc);
 			return NULL;
 		}
 	}
-	
+
+
 	/* parent initialization */
 	proc->p_parent = NULL;
-  
+
   	/* add an element to the process list */
 	proc->p_prevproc = proc_head;
 	proc->p_nextproc = NULL;
@@ -222,14 +225,14 @@ proc_destroy(struct proc *proc)
 		panic("can't push a new element into the pid freelist");
 	}
 
-  	/* remove an element from the process list */ 
-	if(proc->p_prevproc == NULL){	/* removing the tail */ 
+  	/* remove an element from the process list */
+	if(proc->p_prevproc == NULL){	/* removing the tail */
 		proc->p_nextproc->p_prevproc = NULL;
 	}
-	else if(proc->p_nextproc == NULL){	/* removing the head */ 
+	else if(proc->p_nextproc == NULL){	/* removing the head */
 		proc->p_prevproc->p_nextproc = NULL;
 	}
-	else{	/* removing a middle node */ 
+	else{	/* removing a middle node */
 		proc->p_nextproc->p_prevproc = proc->p_prevproc;
 		proc->p_prevproc->p_nextproc = proc->p_nextproc;
 	}
@@ -403,7 +406,7 @@ proc_freelist_init(void)
 }
 
 /* Push an element in the process freelist */
-int 
+int
 proc_freelist_push(__pid_t *pushpid)
 {
 	struct pid_list_elem *push_elem;
