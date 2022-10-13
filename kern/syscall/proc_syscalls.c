@@ -343,7 +343,7 @@ sys_waitpid(__pid_t pid, int *status, int options, int *retval)
     }
 
     /* check if status argument is a valid pointer */
-    if (status >= (int *) USERSPACETOP) {
+    if (status == NULL) {
 		return EFAULT;
 	}
 

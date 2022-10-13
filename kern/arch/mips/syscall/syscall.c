@@ -185,12 +185,12 @@ syscall(struct trapframe *tf)
 		err = sys__exit((int)tf->tf_a0);
 		break;
 
-
 		case SYS_waitpid:
 		err = sys_waitpid((__pid_t) tf->tf_a0,
 			(int *) tf->tf_a1,
 			(int) tf->tf_a2,
 			&retval);
+		break;
 
 		case SYS___getcwd:
       	err = sys___getcwd((char *)tf->tf_a0, (size_t)tf->tf_a1, &retval);
@@ -259,9 +259,6 @@ enter_forked_process(void *data1, unsigned long data2)
 
 	/* activate address space */
 	as_activate();
-
-	/* acquire active lock */
-	lock_acquire(curproc->p_lock_active);
 
     /* enter user mode */
 	tf = *parent_copy_tf;

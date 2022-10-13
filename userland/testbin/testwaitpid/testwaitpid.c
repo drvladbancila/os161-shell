@@ -58,8 +58,7 @@ main()
         exit(child_test_status);
     }
     else{
-        printf("HELLO\n"); // TODO
-        retVal = waitpid(pid, &status, 1);
+        retVal = waitpid(pid, &status, 0);
         printf("I'm the parent, my pid is: %d\n", getpid());
         printf("I'm the parent, my child's pid is: %d\n", pid);
         printf("I'm the parent, my child has returned: %d\n", WEXITSTATUS(status));

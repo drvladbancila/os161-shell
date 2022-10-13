@@ -531,6 +531,9 @@ thread_fork(const char *name,
 		return result;
 	}
 
+	/* Initialize active lock (holding it) */
+	lock_init(newthread->t_proc->p_lock_active, newthread);
+
 	/*
 	 * Because new threads come out holding the cpu runqueue lock
 	 * (see notes at bottom of thread_switch), we need to account

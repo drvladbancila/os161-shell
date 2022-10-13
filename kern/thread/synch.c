@@ -188,6 +188,25 @@ lock_destroy(struct lock *lock)
         kfree(lock);
 }
 
+void 
+lock_init(struct lock *lock, struct thread *newthread)
+{
+	/* Call this (atomically) before waiting for a lock */
+	HANGMAN_WAIT(&newthread->t_hangman, &lock->lk_hangman);
+
+        // Write this
+        /* if you can acquire the spinlock (no one else is doing anything with this lock) */
+        spinlock_acquire(&lock->lk_lock);
+        /* if the lock was free, then take it immediately and set ownership */
+        lock->lk_value = true;
+        lock->lk_owner = newthread;
+        /* release the spinlock */
+        spinlock_release(&lock->lk_lock);
+
+	/* Call this (atomically) once the lock is acquired */
+	HANGMAN_ACQUIRE(&newthread->t_hangman, &lock->lk_hangman);
+}
+
 void
 lock_acquire(struct lock *lock)
 {
