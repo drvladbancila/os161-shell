@@ -28,24 +28,34 @@
  */
 
 /*
- * testgetpid.c
+ * testlseek.c
  *
- * 	Test program for getpid syscall.
- *	Usage: testgetpid
+ * 	Test program for lseek syscall.
+ *	Usage: testlseek
  *
  */
 
 #include <unistd.h>
-#include <sys/types.h>
+#include <fcntl.h>
 #include <stdio.h>
 
 int
 main()
 {
-    pid_t pid;
+    int fd, bytes;
+    char buffer[5], buffer2[5];
+    fd = open("hello.txt", O_CREAT|O_WRONLY);
 
-    pid = getpid();
-    printf("Process ID is: %d\n", pid);
+    bytes = read(fd, buffer, 5);
+    printf("%s : %d\n", buffer, bytes);
 
+    lseek(fd, -3, SEEK_END);
+    bytes = read(fd, buffer2, 5);
+    printf("%s : %d\n", buffer2, bytes);
+
+    if (lseek(fd, -1, SEEK_SET) > 0) {
+        bytes = read(fd, buffer2, 5);
+        printf("%s : %d\n", buffer2, bytes);
+    }
     return 0;
 }

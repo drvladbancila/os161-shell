@@ -95,6 +95,7 @@ boot(void)
 	 * anything at all. You can make it larger though (it's in
 	 * dev/generic/console.c).
 	 */
+	int err;
 
 	kprintf("\n");
 	kprintf("OS/161 base system version %s\n", BASE_VERSION);
@@ -132,7 +133,14 @@ boot(void)
 	vfs_setbootfs("emu0");
 
 	kheap_nextgeneration();
-	filetable_init();
+	err = filetable_init();
+	if (err) {
+		panic("can't create system filetable\n");
+	}
+	err = proc_freelist_init();
+	if (err) {
+		panic("can't create process ID freelist\n");
+	}
 
 	/*
 	 * Make sure various things aren't screwed up.
@@ -151,6 +159,7 @@ shutdown(void)
 
 	kprintf("Shutting down.\n");
 
+	filetable_cleanup();
 	vfs_clearbootfs();
 	vfs_clearcurdir();
 	vfs_unmountall();

@@ -35,7 +35,7 @@
 #include <thread.h>
 #include <current.h>
 #include <syscall.h>
-
+#include <addrspace.h>
 
 /*
  * System call dispatcher.
@@ -82,11 +82,25 @@ syscall(struct trapframe *tf)
 	int32_t retval;
 	int err;
 
+	int *more_args;
+	int64_t first_pair;
+	int64_t second_pair;
+
 	KASSERT(curthread != NULL);
 	KASSERT(curthread->t_curspl == 0);
 	KASSERT(curthread->t_iplhigh_count == 0);
 
 	callno = tf->tf_v0;
+	/*
+	*  if you have more that 4 32-bit args or 2 64-bit args, the other args are
+	*  saved from sp+16
+	*/
+	more_args = (void *) tf->tf_sp + 16;
+	/* in case of 64 bit args consider a0-a1 as a 64 bit arg */
+	first_pair = (((int64_t) tf->tf_a0) << 32) | tf->tf_a1;
+	/* in case of 64 bit args consider a2-a3 as a 64 bit arg */
+	second_pair = (((int64_t) tf->tf_a2) << 32) | tf->tf_a3;
+	(void) first_pair; // REMOVE if you use the first pair somewhere
 
 	/*
 	 * Initialize retval to 0. Many of the system calls don't
@@ -134,8 +148,26 @@ syscall(struct trapframe *tf)
 			&retval);
 		break;
 
+		case SYS_lseek:
+		more_args = (int *) more_args;
+		err = sys_lseek((int) tf->tf_a0,
+			(__off_t) second_pair,
+			(int) *more_args,
+			&retval);
+		break;
+
+		case SYS_dup2:
+		err = sys_dup2((int) tf->tf_a0,
+			(int) tf->tf_a1,
+			&retval);
+		break;
+
 		case SYS_getpid:
 		err = sys_getpid(&retval);
+		break;
+
+		case SYS_fork:
+		err = sys_fork(tf, &retval);
 		break;
 
 		case SYS__exit:
@@ -194,7 +226,23 @@ syscall(struct trapframe *tf)
  * Thus, you can trash it and do things another way if you prefer.
  */
 void
-enter_forked_process(struct trapframe *tf)
+enter_forked_process(void *data1, unsigned long data2)
 {
-	(void)tf;
+	struct trapframe *parent_copy_tf = (struct trapframe *) data1;
+	struct trapframe tf;
+	(void) data2;
+
+	/* set child return values */
+	parent_copy_tf->tf_v0 = 0;
+	parent_copy_tf->tf_a3 = 0;
+
+	/* increase child program counter */
+	parent_copy_tf->tf_epc += 4;
+
+	/* activate address space */
+	as_activate();
+
+    /* enter user mode */
+	tf = *parent_copy_tf;
+	mips_usermode(&tf);
 }

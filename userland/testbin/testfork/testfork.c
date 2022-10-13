@@ -28,24 +28,28 @@
  */
 
 /*
- * testgetpid.c
- *
- * 	Test program for getpid syscall.
- *	Usage: testgetpid
- *
+ * 	Test program for fork syscall.
  */
 
 #include <unistd.h>
 #include <sys/types.h>
+#include <errno.h>
 #include <stdio.h>
 
 int
 main()
 {
     pid_t pid;
-
-    pid = getpid();
-    printf("Process ID is: %d\n", pid);
-
+    pid = fork();
+    if(pid<0){
+        printf("Error: %d\n", errno);
+    }
+    else if(pid==0){
+        printf("I'm the child, my pid is: %d\n", getpid());
+    }
+    else{
+        printf("I'm the parent, my pid is: %d\n", getpid());
+        printf("I'm the parent, my child's pid is: %d\n", pid);
+    }
     return 0;
 }
