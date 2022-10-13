@@ -53,6 +53,19 @@ sys_getpid(int *retpid)
 }
 
 /*
+* System call interface function to get the process ID of the current process' parent
+*/
+int
+sys_getppid(int *retpid)
+{
+    /* return process ID in retpid parameter */
+    *retpid = (int) curproc->p_parent->p_id;
+
+    /* this system call is always successful */
+    return 0;
+}
+
+/*
 * System call interface function to fork a process
 */
 int

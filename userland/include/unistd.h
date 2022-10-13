@@ -129,6 +129,7 @@ int rmdir(const char *dirname);
 
 /* Recommended. */
 pid_t getpid(void);
+pid_t getppid(void);
 int ioctl(int filehandle, int code, void *buf);
 off_t lseek(int filehandle, off_t pos, int code);
 int fsync(int filehandle);
