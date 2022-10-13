@@ -56,8 +56,17 @@ runprogram(char *progname)
 {
 	struct addrspace *as;
 	struct vnode *v;
-	vaddr_t entrypoint, stackptr;
+	vaddr_t entrypoint, stackptr, stackptr_begin;
+	char **argv;
 	int result;
+	size_t progname_len;
+	char *kprogname = kstrdup(progname);
+
+	/* compute program name length + \0 */
+	progname_len = strlen(kprogname) + 1;
+	if (progname_len % 4 != 0) {
+		progname_len += 4 - (progname_len % 4);
+	}
 
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
@@ -97,6 +106,16 @@ runprogram(char *progname)
 		return result;
 	}
 
+	/* move stack pointer */
+	stackptr_begin = stackptr - progname_len;
+	/* get pointer to argv */
+	argv = (char **) (stackptr_begin - 2*sizeof(char *));
+	/* copy buffer to userspace */
+	memcpy((char *) stackptr_begin, kprogname, progname_len);
+	argv[0] = (char *) stackptr_begin;
+	argv[1] = NULL;
+	kfree(kprogname);
+
 	/*
 	* increase the refcount for the stdfiles so that they always have >= 1
 	* refcount and they are not deleted from the sys filetable
@@ -106,9 +125,9 @@ runprogram(char *progname)
 	curproc->p_filetable[STDERR_FILENO]->f_refcount++;
 
 	/* Warp to user mode. */
-	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
+	enter_new_process(1 /*argc*/, (userptr_t) argv /*userspace addr of argv*/,
 			  NULL /*userspace addr of environment*/,
-			  stackptr, entrypoint);
+			  (vaddr_t) argv, entrypoint);
 
 	/* enter_new_process does not return. */
 	panic("enter_new_process returned\n");
