@@ -108,6 +108,10 @@ boot(void)
 
 	/* Early initialization. */
 	ram_bootstrap();
+	err = proc_freelist_init();
+	if (err) {
+		panic("can't create process ID freelist\n");
+	}
 	proc_bootstrap();
 	thread_bootstrap();
 	hardclock_bootstrap();
@@ -136,10 +140,6 @@ boot(void)
 	err = filetable_init();
 	if (err) {
 		panic("can't create system filetable\n");
-	}
-	err = proc_freelist_init();
-	if (err) {
-		panic("can't create process ID freelist\n");
 	}
 
 	/*

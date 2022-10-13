@@ -72,7 +72,7 @@ set_cwd_from_path(char * cwd, char *original, size_t size) {
 	size_t i = 0;
 	char *field;
 	char *saveptr;
-	
+
 	// look for the position of the ":"
 	while (*(original + i) != ':' && i < size)
 		i++;
@@ -105,6 +105,8 @@ set_cwd_from_path(char * cwd, char *original, size_t size) {
 			}
 			field = strtok_r(NULL, "/", &saveptr);
 		}
+	}
+}
 
 /*
  * Function that checks if a user buffer is valid: does not point to NULL and

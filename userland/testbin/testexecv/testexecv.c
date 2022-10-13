@@ -41,6 +41,7 @@ main()
 {
     char *argv[3];
     int pid;
+    int err;
 	argv[0] = (char *) "testwrite";
     argv[1] = (char *) "child_.txt";
 	argv[2] = NULL;
@@ -53,7 +54,10 @@ main()
     } else if (pid == 0) {
         argv[1] = (char *) "child_write.txt";
         printf("I am child process with pid %d calling testwrite...\n", getpid());
-        execv("/testbin/testwrite", argv);
+        err = execv("/testbin/testwrite", argv);
+        if (err < 0) {
+            printf("Error during execv\n");
+        }
     } else {
         printf("I am parent process with pid %d\n", getpid());
     }

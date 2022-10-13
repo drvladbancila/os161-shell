@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <string.h>
 #include <stdio.h>
 
 int
@@ -42,7 +43,7 @@ main()
     pid_t pid;
     pid = fork();
     if(pid<0){
-        printf("Error: %d\n", errno);
+        printf("Error: %s\n", strerror(errno));
     }
     else if(pid==0){
         printf("I'm the child, my pid is: %d, my parent pid is: %d\n", getpid(), getppid());

@@ -44,6 +44,7 @@
 #include <syscall.h>
 #include <test.h>
 #include <current.h>
+#include <syscall.h>
 #include "opt-sfs.h"
 #include "opt-net.h"
 
@@ -117,6 +118,7 @@ common_prog(int nargs, char **args)
 {
 	struct proc *proc;
 	int result;
+	//int waitpid_retval;
 
 	/* Create a process for the new program to run in. */
 	proc = proc_create_runprogram(args[0] /* name */);
@@ -133,6 +135,8 @@ common_prog(int nargs, char **args)
 		proc_destroy(proc);
 		return result;
 	}
+
+	//sys_waitpid(proc->p_id, NULL, 0, &waitpid_retval);
 
 	/*
 	 * The new process will be destroyed when the program exits...

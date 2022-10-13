@@ -87,7 +87,7 @@ struct proc {
 
 	/* Parent process */
 	struct proc *p_parent;
-	
+
 	/* Previous and next processes */
 	struct proc *p_prevproc;
 	struct proc *p_nextproc;
@@ -111,6 +111,9 @@ struct pid_list_elem{
 
 /* Process ID list head */
 struct pid_list_elem *pid_list_head;
+
+/* PID counter */
+extern __pid_t count_pid;
 
 /* This is the process structure for the kernel and for kernel-only threads. */
 extern struct proc *kproc;

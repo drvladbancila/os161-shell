@@ -80,8 +80,12 @@ sys_fork(struct trapframe *tf, int *retval){
     child_tf = (struct trapframe *)kmalloc(sizeof(struct trapframe));
     *child_tf = *tf;
 
+
     /* create child process */
     child = proc_create_runprogram(curproc->p_name);
+    if (pid_list_head->pid == -1 && count_pid == PID_MAX) {
+        return ENPROC;
+    }
 	if (child == NULL) {
 		return ENOMEM;
 	}
@@ -105,13 +109,6 @@ sys_fork(struct trapframe *tf, int *retval){
 
     /* create new thread starting from parent */
     thread_fork(child->p_name, child, enter_forked_process, (void *)child_tf, 1);
-
-
-////////////////////////
-    // TODO : ERRORS to deal with
-    // EMPROC	The current user already has too many processes.
-    // ENPROC	There are already too many processes on the system.
-    // ENOMEM	Sufficient virtual memory for the new process was not available.
 
     /* parent return child pid */
     *retval = child->p_id;
@@ -141,7 +138,7 @@ sys_execv(userptr_t prog, userptr_t args)
     size_t args_size = 0, arg_size, padding_size;
     int argc = 0;
     struct vnode *v;
-    struct addrspace *as;
+    struct addrspace *as, *old_as;
     vaddr_t entrypoint, stackptr, stackptr_data, stackptr_argv;
 
     /* if program name is an invalid buffer */
@@ -219,6 +216,7 @@ sys_execv(userptr_t prog, userptr_t args)
 
     /* create a new address space */
     as = as_create();
+    old_as = curproc->p_addrspace;
 	if (as == NULL) {
 		vfs_close(v);
 		return ENOMEM;
@@ -231,6 +229,7 @@ sys_execv(userptr_t prog, userptr_t args)
     /* load the ELF into memory and get pointer to entry point */
     result = load_elf(v, &entrypoint);
     if (result) {
+        proc_setas(old_as);
         vfs_close(v);
         return result;
     }
@@ -312,7 +311,7 @@ sys__exit(int status)
 /*
 * System call interface function to wait for a process to terminate given its identifier
 */
-int 
+int
 sys_waitpid(__pid_t pid, int *status, int options, int *retval)
 {
     struct proc *searchproc = proc_head;
@@ -342,7 +341,7 @@ sys_waitpid(__pid_t pid, int *status, int options, int *retval)
     if(foundproc->p_parent != curproc){
         return ECHILD;
     }
-    
+
     /* check if status argument is a valid pointer */
     if (status >= (int *) USERSPACETOP) {
 		return EFAULT;
