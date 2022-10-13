@@ -28,7 +28,11 @@
  */
 
 /*
+ * testexit.c
+ *
  * 	Test program for exit syscall.
+ *	Usage: testexit
+ *
  */
 
 #include <unistd.h>
@@ -38,14 +42,5 @@
 int
 main()
 {
-    //int answer;
-    //printf("Success (S) or failure (F)?\n");
-    //answer = getchar();
-    //if((char)answer=='S'){
-    //    exit(EXIT_SUCCESS);
-    //}
-    //else if((char)answer=='F'){
-    //    exit(EXIT_FAILURE);
-    //}
     exit(EXIT_SUCCESS);
 }

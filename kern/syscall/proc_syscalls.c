@@ -34,7 +34,9 @@
 #include <limits.h>
 #include <addrspace.h>
 #include <kern/errno.h>
+#include <kern/wait.h>
 #include <mips/trapframe.h>
+#include <synch.h>
 #include <copyinout.h>
 
 static const char *arg_padding[] = {"", "\0", "\0\0", "\0\0\0"};
@@ -278,7 +280,6 @@ sys_execv(userptr_t prog, userptr_t args)
 
 /*
 * System call interface function to exit from a process
-* // TODO: Still to understand
 */
 int
 sys__exit(int status)
@@ -288,20 +289,87 @@ sys__exit(int status)
     /* record status */
     curproc->p_exit_status = status;
 
-    /* release address space */
-    //as_destroy(curproc->p_addrspace);
-
+    /* save pointer to the current process */
     alone_proc = curproc;
 
-    proc_remthread(curthread);
-
-    if(alone_proc->p_numthreads == 0){
-        //viene distrutto solo quando il padre non lo aspetta piu
+    if(alone_proc->p_numthreads == 1){
+        /* release the lock */
+        lock_release(curproc->p_lock_active);
+	    /* acquire wait lock (useful in case of parent waitpid syscall) */
+	    lock_acquire(curproc->p_lock_wait);
+	    /* release wait lock */
+	    lock_release(curproc->p_lock_wait);
+        proc_remthread(curthread);
         proc_destroy(alone_proc);
     }
 
     /* Exit thread */
     thread_exit();
+
+    return 0;
+}
+
+/*
+* System call interface function to wait for a process to terminate given its identifier
+*/
+int 
+sys_waitpid(__pid_t pid, int *status, int options, int *retval)
+{
+    struct proc *searchproc = proc_head;
+    struct proc *foundproc = NULL;
+    int tryval;
+
+    /* currently no options are supported */
+    if(options != 0 && options != WNOHANG){
+        return EINVAL;
+    }
+
+    /* check if pid argument is the identifier of an existing process*/
+    while(searchproc != NULL){
+        if(searchproc->p_id == pid){
+            foundproc = searchproc;
+            searchproc = NULL;
+        }
+        else{
+            searchproc = searchproc->p_prevproc;
+        }
+    }
+    if(foundproc == NULL){
+        return ESRCH;
+    }
+
+    /* check if pid argument is the identifier of a child process*/
+    if(foundproc->p_parent != curproc){
+        return ECHILD;
+    }
+    
+    /* check if status argument is a valid pointer */
+    if (status >= (int *) USERSPACETOP) {
+		return EFAULT;
+	}
+
+    /* acquire child locks */
+    lock_acquire(foundproc->p_lock_wait);
+    if(options == WNOHANG){
+        tryval = lock_tryacquire(foundproc->p_lock_active);
+        if(tryval){
+            *retval = 0;
+            return 0;
+        }
+    }
+    else{
+        lock_acquire(foundproc->p_lock_active);
+    }
+
+    /* save child process exit status */
+    *status = _MKWAIT_EXIT(foundproc->p_exit_status);
+
+    /* release child locks */
+    lock_release(foundproc->p_lock_wait);
+    lock_release(foundproc->p_lock_active);
+
+    /* on success, the child pid is the return value */
+    *retval = (int) pid;
 
     return 0;
 }

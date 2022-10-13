@@ -55,6 +55,9 @@
  */
 struct proc *kproc;
 
+/* Process list head */
+struct proc *proc_head = NULL;
+
 /*
  * Create a proc structure.
  */
@@ -109,11 +112,23 @@ proc_create(const char *name)
 		}
 	}
 	
-	/* Parent initialization */
+	/* parent initialization */
 	proc->p_parent = NULL;
   
+  	/* add an element to the process list */
+	proc->p_prevproc = proc_head;
+	proc->p_nextproc = NULL;
+	if(proc->p_prevproc != NULL){
+		proc->p_prevproc->p_nextproc = proc;
+	}
+	proc_head = proc;
+
 	/* exit status initialization */
 	proc->p_exit_status = 0;
+
+	/* create the locks */
+	proc->p_lock_active = lock_create(proc->p_name);
+	proc->p_lock_wait = lock_create(proc->p_name);
 
 	return proc;
 }
@@ -201,12 +216,27 @@ proc_destroy(struct proc *proc)
 	KASSERT(proc->p_numthreads == 0);
 	spinlock_cleanup(&proc->p_lock);
 
-	/* the PID can be used by other processes */
-	proc_freelist_push(&proc->p_id);
-	//err_push = proc_freelist_push(&proc->p_id);
-	//if(err_push){
-		//return
-	//}
+	/* release the PID */
+	int err_push = proc_freelist_push(&proc->p_id);
+	if(err_push){
+		panic("can't push a new element into the pid freelist");
+	}
+
+  	/* remove an element from the process list */ 
+	if(proc->p_prevproc == NULL){	/* removing the tail */ 
+		proc->p_nextproc->p_prevproc = NULL;
+	}
+	else if(proc->p_nextproc == NULL){	/* removing the head */ 
+		proc->p_prevproc->p_nextproc = NULL;
+	}
+	else{	/* removing a middle node */ 
+		proc->p_nextproc->p_prevproc = proc->p_prevproc;
+		proc->p_prevproc->p_nextproc = proc->p_nextproc;
+	}
+
+	/* destroy the locks */
+	lock_destroy(proc->p_lock_active);
+	lock_destroy(proc->p_lock_wait);
 
 	kfree(proc->p_name);
 	kfree(proc);

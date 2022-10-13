@@ -27,50 +27,42 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _SYSCALL_H_
-#define _SYSCALL_H_
-
-
-#include <cdefs.h> /* for __DEAD */
-struct trapframe; /* from <machine/trapframe.h> */
-
 /*
- * The system call dispatcher.
+ * testwaitpid.c
+ *
+ * 	Test program for waitpid syscall.
+ *	Usage: testwaitpid
+ *
  */
 
-void syscall(struct trapframe *tf);
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-/*
- * Support functions.
- */
-
-/* Helper for fork(). You write this. */
-void enter_forked_process(void *data1, unsigned long data2);
-
-/* Enter user mode. Does not return. */
-__DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
-		       vaddr_t stackptr, vaddr_t entrypoint);
-
-
-/*
- * Prototypes for IN-KERNEL entry points for system call implementations.
- */
-
-int sys_reboot(int code);
-int sys_open(userptr_t filename, int flag, int *retfd);
-int sys_close(int fd);
-int sys_read(int fd, userptr_t buf, size_t buflen, int *retval);
-int sys_write(int fd, userptr_t buf, size_t buflen, int *retval);
-int sys_lseek(int fd, __off_t pos, int whence, int *retval);
-int sys_dup2(int oldfd, int newfd, int *retval);
-int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
-int sys_getpid(int *retpid);
-int sys_getppid(int *retpid);
-int sys_fork(struct trapframe *tf, int *retval);
-int sys_execv(userptr_t progname, userptr_t args);
-int sys__exit(int status);
-int sys_waitpid(__pid_t pid, int *status, int options, int *retval);
-int sys___getcwd(char * buf, size_t size, int *retval);
-int sys_chdir(char * pathname, int *retval);
-
-#endif /* _SYSCALL_H_ */
+int
+main()
+{
+    int status, child_test_status = 5;
+    pid_t pid, retVal;
+    pid = fork();
+    if(pid<0){
+        printf("Error: %d\n", errno);
+        exit(EXIT_FAILURE);
+    }
+    else if(pid==0){
+        printf("I'm the child, my pid is: %d\n", getpid());
+        exit(child_test_status);
+    }
+    else{
+        printf("HELLO\n"); // TODO
+        retVal = waitpid(pid, &status, 1);
+        printf("I'm the parent, my pid is: %d\n", getpid());
+        printf("I'm the parent, my child's pid is: %d\n", pid);
+        printf("I'm the parent, my child has returned: %d\n", WEXITSTATUS(status));
+        printf("I'm the parent, waitpid has returned: %d\n", retVal);
+        exit(EXIT_SUCCESS);
+    }
+}

@@ -87,11 +87,21 @@ struct proc {
 
 	/* Parent process */
 	struct proc *p_parent;
+	
+	/* Previous and next processes */
+	struct proc *p_prevproc;
+	struct proc *p_nextproc;
 
 	/* Exit status */
 	int p_exit_status;
 
+	/* Lock for an active process */
+	struct lock *p_lock_active;
+	struct lock *p_lock_wait;
 };
+
+/* Process list head */
+extern struct proc *proc_head;
 
 /* Process ID list element structure */
 struct pid_list_elem{
