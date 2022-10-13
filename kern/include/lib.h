@@ -187,6 +187,8 @@ void kgets(char *buf, size_t maxbuflen);
 
 void kprintf_bootstrap(void);
 
+void set_cwd_from_path(char *, char *, size_t);
+
 /*
  * Other miscellaneous stuff
  */
