@@ -82,6 +82,9 @@ struct proc {
 	/* Process ID */
 	__pid_t p_id;
 
+	/* Path  */
+	char c_cwd[PATH_MAX-1];
+
 	/* Parent process */
 	struct proc *p_parent;
 	

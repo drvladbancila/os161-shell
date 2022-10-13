@@ -44,6 +44,8 @@
 #include <uio.h>
 #include <vnode.h>
 #include <kern/errno.h>
+#include <vm.h>
+#include <lib.h>
 #include <kern/seek.h>
 #include <kern/stat.h>
 
@@ -59,7 +61,7 @@ int sys_open(userptr_t filename, int flags, int *retfd)
     char *kfilename = NULL;
     size_t filename_len;
 
-    filename_len = strlen((char *) filename) + 1;
+    filename_len = strlen((char *) filename);
 
     /* check if the filename is a valid buffer in userspace */
     if (check_buffer(filename, filename_len)) {
@@ -424,6 +426,97 @@ sys_dup2(int oldfd, int newfd, int *retval)
     lock_release(dest->f_lock);
 
     *retval = newfd;
+
+    return 0;
+}
+
+/* Stores in the address selected by buf the name of the working directory,
+ * terminated with zero.
+ * retval is the effective dimension of the returned buffer, -1 on fail
+ * returns 0 on success and ENOENT, EIO or EFAULT on fails  
+*/
+int
+sys___getcwd (char *buf, size_t size, int *retval) 
+{
+    int error;
+    struct uio userio;  
+    struct iovec iov;
+
+    userptr_t bufend = (userptr_t) (buf + size);
+    if (buf == NULL || (bufend >= (userptr_t) USERSPACETOP)) {
+        return EFAULT;
+    }
+    (void)retval;
+    // TODO: usa checkbuffer per fare questo controllo
+
+    /* initialize io vector to point to user buffer and have correct length */
+    iov.iov_ubase = (userptr_t) buf;
+    iov.iov_len = size;
+
+    /* initialize user io, specifying that the buffer belongs to userspace */
+    userio.uio_iov = &iov;
+    userio.uio_iovcnt = 1;
+    userio.uio_offset = 0;
+    userio.uio_resid = size;
+    userio.uio_segflg = UIO_USERSPACE;
+    userio.uio_rw = UIO_READ;
+    userio.uio_space = proc_getas();
+
+    /*
+    *  errors during the getcwd operation
+    *  error = 0 : no errors during VOP_WRITE
+    *  error = EIO : I/O errors during VOP_WRITE
+    *  error = ENOENT	: a component of the pathname no longer exists.
+    */
+    error = vfs_getcwd(&userio);
+
+    if (error) {
+        *retval = -1;
+        return error;
+    } else {
+        //null termination
+        buf[size - userio.uio_resid] = 0;
+
+        //return the length of returned data
+        *retval = size - userio.uio_resid;
+    }
+
+    return 0;
+}
+
+/* Sets the current working directory to the one named in pathname 
+*/
+int 
+sys_chdir(char *pathname, int *retval) 
+{
+    int error;
+    char *kpath;
+
+    userptr_t pathname_end = (userptr_t) (pathname + strlen(pathname));
+    if (pathname == NULL || (pathname_end >= (userptr_t) USERSPACETOP)) {
+        return EFAULT;
+    }
+
+    //TODO: return errors as man page
+    kpath = kstrdup(pathname);
+    error = vfs_chdir(kpath);
+    /*
+    *  errors during the chdir operation
+    *  err = 0 : no errors during VOP_WRITE
+    *  err = EIO : I/O errors during VOP_WRITE
+    *  err = ENODEV	: The device prefix of pathname did not exist 1
+    *  err = ENOTDIR : pathname did not refer to a directory  1
+    *  err = ENOENT : pathname did not exist   1
+    *  err = EFAULT	: pathname was an invalid pointer
+    */
+    if (error) {
+        *retval = -1;
+        return error;
+    } else {
+        // save pathname in the variable of the current process
+        set_cwd_from_path(curproc->c_cwd, pathname, strlen(pathname));
+        *retval = 0;
+    }
 
     return 0;
 }

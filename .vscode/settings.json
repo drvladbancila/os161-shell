@@ -20,5 +20,8 @@
         "addrspace.h": "c",
         "random": "c",
         "cstdlib": "c"
-    }
+        "uio.h": "c",
+        "array": "c",
+    },
+    "todo-tree.tree.scanMode": "workspace only"
 }

@@ -168,19 +168,36 @@ syscall(struct trapframe *tf)
 		err = sys_getpid(&retval);
 		break;
 
+		case SYS_getppid:
+		err = sys_getppid(&retval);
+		break;
+
 		case SYS_fork:
 		err = sys_fork(tf, &retval);
+		break;
+
+		case SYS_execv:
+		err = sys_execv((userptr_t) tf->tf_a0,
+			(userptr_t) tf->tf_a1);
 		break;
 
 		case SYS__exit:
 		err = sys__exit((int)tf->tf_a0);
 		break;
 
+
 		case SYS_waitpid:
 		err = sys_waitpid((__pid_t) tf->tf_a0,
 			(int *) tf->tf_a1,
 			(int) tf->tf_a2,
 			&retval);
+
+		case SYS___getcwd:
+      	err = sys___getcwd((char *)tf->tf_a0, (size_t)tf->tf_a1, &retval);
+    	break;
+	
+		case SYS_chdir:
+		err = sys_chdir((char *)tf->tf_a0, &retval);
 		break;
 
 	    default:
