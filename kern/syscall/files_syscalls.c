@@ -61,7 +61,7 @@ int sys_open(userptr_t filename, int flags, int *retfd)
     char *kfilename = NULL;
     size_t filename_len;
 
-    filename_len = strlen((char *) filename) + 1;
+    filename_len = strlen((char *) filename);
 
     /* check if the filename is a valid buffer in userspace */
     if (check_buffer(filename, filename_len)) {

@@ -38,20 +38,30 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 
 int
-main()
+main(int argc, char **argv)
 {
-    int fd, bytes;
-    char buffer[5] = "os161";
-    fd = open("os161_write.txt", O_CREAT|O_WRONLY);
+    int fd;
+    size_t bytes;
+    char buffer[] = "it works!";
+
+    if (argc < 2) {
+        printf("You did not supply a filename!\n");
+        return -1;
+    }
+    printf("Opening file: %s\n", argv[1]);
+    printf("String to write to file: %s\n", buffer);
+    fd = open(argv[1], O_CREAT|O_WRONLY);
 
     bytes = 0;
 
-    while (bytes < 5) {
+    while (bytes < strlen(buffer)) {
         bytes += write(fd, &buffer[bytes], 1);
-        printf("bytes: %d\n", bytes);
+        printf("Written bytes: %d\n", bytes);
     }
+    printf("Write complete! You can view the file now!\n");
 
 
     close(fd);
