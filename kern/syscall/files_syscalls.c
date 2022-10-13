@@ -277,9 +277,6 @@ sys___getcwd (char *buf, size_t size, int *retval)
     int error;
     struct uio userio;  
     struct iovec iov;
-    //char *kbuf;
-
-    //kbuf = kstrdup(buf);
 
     userptr_t bufend = (userptr_t) (buf + size);
     if (buf == NULL || (bufend >= (userptr_t) USERSPACETOP)) {
@@ -330,6 +327,11 @@ sys_chdir(char *pathname, int *retval)
 {
     int error;
     char *kpath;
+
+    userptr_t pathname_end = (userptr_t) (pathname + strlen(pathname));
+    if (pathname == NULL || (pathname_end >= (userptr_t) USERSPACETOP)) {
+        return EFAULT;
+    }
 
     //TODO: return errors as man page
     kpath = kstrdup(pathname);
