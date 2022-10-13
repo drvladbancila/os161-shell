@@ -127,6 +127,7 @@ vfs_chdir(char *path)
 	int result;
 
 	result = vfs_lookup(path, &vn);
+
 	if (result) {
 		return result;
 	}
@@ -174,6 +175,7 @@ vfs_getcwd(struct uio *uio)
 	if (result) {
 		goto out;
 	}
+	
 
 	result = VOP_NAMEFILE(cwd, uio);
 

@@ -67,5 +67,8 @@ int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 int sys_getpid(int *retpid);
 int sys_fork(struct trapframe *tf, int *retval);
 int sys__exit(int status);
+int sys___getcwd(char * buf, size_t size, int *retval);
+int sys_chdir(char * pathname, int *retval);
+
 
 #endif /* _SYSCALL_H_ */

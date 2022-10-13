@@ -174,6 +174,14 @@ syscall(struct trapframe *tf)
 		err = sys__exit((int)tf->tf_a0);
 		break;
 
+		case SYS___getcwd:
+      	err = sys___getcwd((char *)tf->tf_a0, (size_t)tf->tf_a1, &retval);
+    	break;
+	
+		case SYS_chdir:
+		err = sys_chdir((char *)tf->tf_a0, &retval);
+		break;
+
 	    default:
 		kprintf("Unknown syscall %d\n", callno);
 		err = ENOSYS;
@@ -196,7 +204,7 @@ syscall(struct trapframe *tf)
 		tf->tf_a3 = 0;      /* signal no error */
 	}
 
-	/*
+	/*ù
 	 * Now, advance the program counter, to avoid restarting
 	 * the syscall over and over again.
 	 */
