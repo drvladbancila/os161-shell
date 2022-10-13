@@ -64,7 +64,8 @@ proc_create(const char *name)
 {
 	struct proc *proc;
 	unsigned int fd;
-	static int count_pid = PID_MIN;
+	static __pid_t count_pid = PID_MIN-1;
+	int err_pop;
 
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
@@ -95,14 +96,23 @@ proc_create(const char *name)
 		proc->p_filetable[fd] = NULL;
 	}
 
-	/* Process ID assignment */
-	proc->p_id = (__pid_t) count_pid;
-	count_pid++; // TODO: best technique?
-
+	/* process ID assignment */
+	if(count_pid <= PID_MAX){
+		proc->p_id = count_pid;
+		count_pid++;
+	}
+	else{
+		err_pop = proc_freelist_pop(&proc->p_id);
+		if(err_pop){
+			kfree(proc);
+			return NULL;
+		}
+	}
+	
 	/* Parent initialization */
 	proc->p_parent = NULL;
-
-	/* Exit status initialization */
+  
+	/* exit status initialization */
 	proc->p_exit_status = 0;
 
 	return proc;
@@ -190,6 +200,13 @@ proc_destroy(struct proc *proc)
 
 	KASSERT(proc->p_numthreads == 0);
 	spinlock_cleanup(&proc->p_lock);
+
+	/* the PID can be used by other processes */
+	proc_freelist_push(&proc->p_id);
+	//err_push = proc_freelist_push(&proc->p_id);
+	//if(err_push){
+		//return
+	//}
 
 	kfree(proc->p_name);
 	kfree(proc);
@@ -340,4 +357,52 @@ proc_setas(struct addrspace *newas)
 	proc->p_addrspace = newas;
 	spinlock_release(&proc->p_lock);
 	return oldas;
+}
+
+/* Initialize the process freelist */
+int
+proc_freelist_init(void)
+{
+	pid_list_head = (struct pid_list_elem *) kmalloc(sizeof(struct pid_list_elem));
+	if(pid_list_head == NULL){
+		return ENOMEM;
+	}
+	pid_list_head->pid = -1;
+	pid_list_head->prev_elem = NULL;
+	return 0;
+}
+
+/* Push an element in the process freelist */
+int 
+proc_freelist_push(__pid_t *pushpid)
+{
+	struct pid_list_elem *push_elem;
+
+	push_elem = (struct pid_list_elem *) kmalloc(sizeof(struct pid_list_elem));
+	if(push_elem == NULL){
+		return ENOMEM;
+	}
+	push_elem->pid = *pushpid;
+	push_elem->prev_elem = pid_list_head;
+	pid_list_head = push_elem;
+
+	return 0;
+}
+
+/* Pop an element from the process freelist */
+int
+proc_freelist_pop(__pid_t *poppid)
+{
+	struct pid_list_elem *pop_elem;
+
+	pop_elem = pid_list_head;
+	*poppid = pop_elem->pid;
+	if(*poppid == -1){
+		return 1;
+	}
+	pid_list_head = pop_elem->prev_elem;
+
+	kfree(pop_elem);
+
+	return 0;
 }

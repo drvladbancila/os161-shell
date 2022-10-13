@@ -137,6 +137,10 @@ boot(void)
 	if (err) {
 		panic("can't create system filetable\n");
 	}
+	err = proc_freelist_init();
+	if (err) {
+		panic("can't create process ID freelist\n");
+	}
 
 	/*
 	 * Make sure various things aren't screwed up.

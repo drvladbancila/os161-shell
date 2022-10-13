@@ -40,6 +40,7 @@
 #include <limits.h>
 #include <fs.h>
 #include <kern/types.h>
+#include <kern/errno.h>
 
 struct addrspace;
 struct thread;
@@ -86,7 +87,17 @@ struct proc {
 
 	/* Exit status */
 	int p_exit_status;
+
 };
+
+/* Process ID list element structure */
+struct pid_list_elem{
+	__pid_t pid;
+	struct pid_list_elem *prev_elem;
+};
+
+/* Process ID list head */
+struct pid_list_elem *pid_list_head;
 
 /* This is the process structure for the kernel and for kernel-only threads. */
 extern struct proc *kproc;
@@ -112,5 +123,9 @@ struct addrspace *proc_getas(void);
 /* Change the address space of the current process, and return the old one. */
 struct addrspace *proc_setas(struct addrspace *);
 
+/* Process freelist functions */
+int proc_freelist_init(void);
+int proc_freelist_push(__pid_t *pushpid);
+int proc_freelist_pop(__pid_t *poppid);
 
 #endif /* _PROC_H_ */
