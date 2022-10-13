@@ -12,7 +12,7 @@ SUBDIRS=add argtest badcall bigexec bigfile bigfork bigseek bloat conman \
 	randcall redirect rmdirtest rmtest \
 	sbrktest schedpong sort sparsefile tail testopen testread testwrite \
 	testexit testfork testlseek testgetpid tictac triplehuge triplemat triplesort usemtest zero \
-	testexecv
+	testexecv testgetppid
 
 # But not:
 #    userthreads    (no support in kernel API in base system)
